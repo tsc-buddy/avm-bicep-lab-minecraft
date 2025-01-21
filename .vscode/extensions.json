@@ -1,0 +1,8 @@
+{
+  "recommendations": [
+    "esbenp.prettier-vscode",
+    "editorconfig.editorconfig",
+    "ms-vscode.powershell",
+    "ms-azuretools.vscode-bicep"
+  ]
+}
