@@ -138,10 +138,10 @@ module azfw 'br/public:avm/res/network/azure-firewall:0.5.2' = {
   params: {
     // Required parameters
     name: 'azfw001'
-    azureSkuTier: 'Basic'
+    azureSkuTier: 'Standard'
     virtualNetworkResourceId: vnet.outputs.resourceId
     location: location
-    threatIntelMode: 'Deny'
+    threatIntelMode: 'Audit'
     networkRuleCollections: [
       {
         name: 'allow-outbound'
@@ -160,7 +160,7 @@ module azfw 'br/public:avm/res/network/azure-firewall:0.5.2' = {
                 '*'
               ]
               sourceAddresses: [
-                '192.168.1.0/24'
+                '*'
               ]
               destinationAddresses: [
                 '*'
@@ -186,12 +186,12 @@ module azfw 'br/public:avm/res/network/azure-firewall:0.5.2' = {
                 '*'
               ]
               destinationAddresses: [
-                '192.168.1.96/27'              
+                '192.168.1.96/27'
               ]
               destinationPorts: [
                 '25565'
               ]
-              
+
             }
           ]
         }
