@@ -2,6 +2,7 @@ param vnetName string = 'vnet-mcjava-priv'
 param vnetAddressPrefixes array = [
   '192.168.1.0/24'
 ]
+param time string = utcNow()
 param subnetAzureFirewallName string = 'AzureFirewallSubnet'
 param subnetAzureFirewallPrefix string = '192.168.1.0/26'
 param subnetStorageName string = 'storage'
@@ -17,46 +18,16 @@ param midTags object = {
 }
 
 param workspaceName string = 'oiwmin001'
-param location string = location
+param location string = resourceGroup().location
 param storageAccountName string = 'mcjavaservfiles01'
 param blobName string = 'mcjavablob'
 
-
 param mngEnvName string = 'mc0101'
-
-param workloadProfiles array = [
-  {
-    maximumCount: 3
-    minimumCount: 0
-    name: 'CAW01'
-    workloadProfileType: 'D4'
-  }
-]
 
 param cappsName string = 'capmcjava01'
 
-param cappsContainers array = [
-  {
-    image: 'docker.io/itzg/minecraft-server'
-    name: 'minecraft-container'
-    resources: {
-      cpu: '2'
-      memory: '4Gi'
-    }
-    env: [
-      { name: 'EULA', value: 'true' }
-      { name: 'MEMORY', value: '4G' }
-      { name: 'DIFFICULTY', value: 'normal' }
-      { name: 'SERVER_NAME', value: 'Minecraft' }
-      { name: 'OPS', value: 'LurkingMedal140' }
-      { name: 'VIEW_DISTANCE', value: '32' }
-    ]
-  }
-]
-
-
 module vnet 'br/public:avm/res/network/virtual-network:0.5.2' = {
-  name: 'privateVnet'
+  name: '${time}-privateVnet'
   params: {
     name: vnetName
     addressPrefixes: vnetAddressPrefixes
@@ -83,9 +54,9 @@ module vnet 'br/public:avm/res/network/virtual-network:0.5.2' = {
 }
 
 module pdnssto 'br/public:avm/res/network/private-dns-zone:0.7.0' = {
-  name: 'storagedns'
+  name: '${time}-storagedns'
   params: {
-    name: 'privatelink.blob.core.windows.net'
+    name: pdnsName
     virtualNetworkLinks: [
       {
         virtualNetworkResourceId: vnet.outputs.resourceId
@@ -105,7 +76,7 @@ module mid 'br/public:avm/res/managed-identity/user-assigned-identity:0.4.0' = {
 }
 
 module pip 'br/public:avm/res/network/public-ip-address:0.7.1' = {
-  name: 'publicIpAddressDeployment'
+  name: '${time}-publicIpAddressDeployment'
   params: {
     // Required parameters
     name: 'npiawaf001'
@@ -134,14 +105,31 @@ module pip 'br/public:avm/res/network/public-ip-address:0.7.1' = {
 }
 
 module azfw 'br/public:avm/res/network/azure-firewall:0.5.2' = {
-  name: 'azureFirewallDeployment'
+  name: '${time}-azureFirewallDeployment'
   params: {
     // Required parameters
     name: 'azfw001'
     azureSkuTier: 'Standard'
     virtualNetworkResourceId: vnet.outputs.resourceId
     location: location
-    threatIntelMode: 'Audit'
+    threatIntelMode: 'Alert'
+    // diagnosticSettings: [
+    //   {
+    //     metricCategories: [
+    //       {
+    //         category: 'AllMetrics'
+    //       }
+    //     ]
+    //     logCategoriesAndGroups: [
+    //       {
+    //         categoryGroup: 'allLogs'
+    //       }
+    //     ]
+    //     name: 'customSetting'
+
+    //     workspaceResourceId: workspace.outputs.resourceId
+    //   }
+    // ]
     networkRuleCollections: [
       {
         name: 'allow-outbound'
@@ -170,7 +158,7 @@ module azfw 'br/public:avm/res/network/azure-firewall:0.5.2' = {
         }
       }
       {
-        name:'allow-in-minecraft'
+        name: 'allow-in-minecraft'
         properties: {
           action: {
             type: 'Allow'
@@ -182,7 +170,7 @@ module azfw 'br/public:avm/res/network/azure-firewall:0.5.2' = {
               protocols: [
                 'Any'
               ]
-              sourceAddresses:[
+              sourceAddresses: [
                 '*'
               ]
               destinationAddresses: [
@@ -191,7 +179,6 @@ module azfw 'br/public:avm/res/network/azure-firewall:0.5.2' = {
               destinationPorts: [
                 '25565'
               ]
-
             }
           ]
         }
@@ -201,7 +188,7 @@ module azfw 'br/public:avm/res/network/azure-firewall:0.5.2' = {
 }
 
 module storageAccount 'br/public:avm/res/storage/storage-account:0.15.0' = {
-  name: 'storageAccountDeployment'
+  name: '${time}-storageAccountDeployment'
   params: {
     // Required parameters
     name: storageAccountName
@@ -223,7 +210,6 @@ module storageAccount 'br/public:avm/res/storage/storage-account:0.15.0' = {
       deleteRetentionPolicyEnabled: true
       diagnosticSettings: [
         {
-
           metricCategories: [
             {
               category: 'AllMetrics'
@@ -292,7 +278,7 @@ module storageAccount 'br/public:avm/res/storage/storage-account:0.15.0' = {
         privateDnsZoneGroup: {
           privateDnsZoneGroupConfigs: [
             {
-              privateDnsZoneResourceId: pdns.outputs.resourceId
+              privateDnsZoneResourceId: pdnssto.outputs.resourceId
             }
           ]
         }
@@ -317,7 +303,7 @@ module storageAccount 'br/public:avm/res/storage/storage-account:0.15.0' = {
 }
 
 module workspace 'br/public:avm/res/operational-insights/workspace:0.9.1' = {
-  name: 'workspaceDeployment'
+  name: '${time}-workspaceDeployment'
   params: {
     // Required parameters
     name: workspaceName
@@ -327,7 +313,7 @@ module workspace 'br/public:avm/res/operational-insights/workspace:0.9.1' = {
 }
 
 module managedEnvironment 'br/public:avm/res/app/managed-environment:0.8.1' = {
-  name: 'managedEnvironmentDeployment'
+  name: '${time}-managedEnvironmentDeployment'
   params: {
     // Required parameters
     logAnalyticsWorkspaceResourceId: workspace.outputs.resourceId
@@ -338,22 +324,59 @@ module managedEnvironment 'br/public:avm/res/app/managed-environment:0.8.1' = {
     infrastructureSubnetId: vnet.outputs.subnetResourceIds[2]
     internal: true
     location: location
+    storages: [
+      {
+        storageAccountName: storageAccount.outputs.name
+        shareName: 'mcjavashare'
+        accessMode: 'ReadWrite'
+        kind: 'SMB'
+      }
+    ]
     platformReservedCidr: '172.17.17.0/24'
     platformReservedDnsIP: '172.17.17.17'
-    workloadProfiles: workloadProfiles
+    workloadProfiles: [
+      {
+        maximumCount: 3
+        minimumCount: 0
+        name: 'CAW01'
+        workloadProfileType: 'D4'
+      }
+    ]
   }
 }
 
 module capps 'br/public:avm/res/app/container-app:0.12.0' = {
-  name: cappsName
+  name: '${time}-${cappsName}'
   params: {
-    // Required parameters
-    containers: cappsContainers
-    environmentResourceId: managedEnvironment.outputs.resourceId
     name: cappsName
-    // Non-required parameters
-    location: location
+    containers: [
+      {
+        image: 'docker.io/itzg/minecraft-server'
+        name: 'minecraft'
+        resources: {
+          cpu: json('2')
+          memory: '4Gi'
+        }
+        env: [
+          { name: 'EULA', value: 'true' }
+          { name: 'MEMORY', value: '4G' }
+          { name: 'DIFFICULTY', value: 'normal' }
+          { name: 'SERVER_NAME', value: 'Minecraft' }
+          { name: 'OPS', value: 'DougieMalone' }
+          { name: 'VIEW_DISTANCE', value: '32' }
+          { name: 'ONLINE_MODE', value: 'false' }
+        ]
+      }
+    ]
+    ingressTargetPort: 25565
+    workloadProfileName: 'CAW01'
+    // volumes: [
+    //   {
+    //     name: 'mcjavashare'
+    //     mountPath: '/data'
+    //   }
+    // ]
+    environmentResourceId: managedEnvironment.outputs.resourceId
   }
 }
-
 // Container Insights
