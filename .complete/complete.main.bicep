@@ -16,7 +16,6 @@ param workspaceName string = 'oiwmin001'
 param location string = resourceGroup().location
 param storageAccountName string = 'mcjavaservfiles'
 param blobName string = 'mcjavablob'
-param utcNow string = utcNow(HHmm)
 
 param mngEnvName string = 'mc0101'
 

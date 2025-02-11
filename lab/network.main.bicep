@@ -14,12 +14,8 @@ param subnetAzureFirewallManagementPrefix string = '192.168.1.128/26'
 param pdnsName string = 'privatelink.blob.core.windows.net'
 param workspaceName string = 'oiwmin001'
 param location string = resourceGroup().location
-param storageAccountName string = 'mcjavaservfiles'
-param blobName string = 'mcjavablob'
 
 param mngEnvName string = 'mc0101'
-
-param cappsName string = 'capmcjava01'
 
 module vnet 'br/public:avm/res/network/virtual-network:0.5.2' = {
   name: '${time}-privateVnet'
