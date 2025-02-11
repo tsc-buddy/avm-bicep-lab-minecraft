@@ -42,6 +42,7 @@ module storageAccount 'br/public:avm/res/storage/storage-account:0.15.0' = {
     // Required parameters
     name: storageAccountName
     // Non-required parameters
+    allowSharedKeyAccess: true
     allowBlobPublicAccess: true
     blobServices: {
       automaticSnapshotPolicyEnabled: true
