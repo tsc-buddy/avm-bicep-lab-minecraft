@@ -16,7 +16,6 @@ param workspaceName string = 'oiwmin001'
 param location string = resourceGroup().location
 param storageAccountName string = 'mcjavaservfiles'
 param blobName string = 'mcjavablob'
-param utcNow string = utcNow(HHmm)
 
 param mngEnvName string = 'mc0101'
 
@@ -68,11 +67,7 @@ module pip 'br/public:avm/res/network/public-ip-address:0.7.1' = {
     name: 'npiawaf001'
     // Non-required parameters
 
-    diagnosticSettings: [
-      {
-        workspaceResourceId: workspace.outputs.resourceId
-      }
-    ]
+    diagnosticSettings: []
     lock: {
       kind: 'CanNotDelete'
       name: 'myCustomLockName'
@@ -151,6 +146,42 @@ module azfw 'br/public:avm/res/network/azure-firewall:0.5.2' = {
             }
           ]
         }
+      }
+    ]
+  }
+}
+
+module workspace 'br/public:avm/res/operational-insights/workspace:0.9.1' = {
+  name: '${time}-workspaceDeployment'
+  params: {
+    // Required parameters
+    name: workspaceName
+    // Non-required parameters
+    location: location
+  }
+}
+
+module managedEnvironment 'br/public:avm/res/app/managed-environment:0.8.1' = {
+  name: '${time}-managedEnvironmentDeployment'
+  params: {
+    // Required parameters
+    logAnalyticsWorkspaceResourceId: workspace.outputs.resourceId
+    name: mngEnvName
+    // Non-required parameters
+    dockerBridgeCidr: '172.16.0.1/28'
+    infrastructureResourceGroupName: 'mngmctest01'
+    infrastructureSubnetId: vnet.outputs.subnetResourceIds[2]
+    internal: true
+    location: location
+    storages: []
+    platformReservedCidr: '172.17.17.0/24'
+    platformReservedDnsIP: '172.17.17.17'
+    workloadProfiles: [
+      {
+        maximumCount: 3
+        minimumCount: 0
+        name: 'CAW01'
+        workloadProfileType: 'D4'
       }
     ]
   }
