@@ -24,7 +24,6 @@
 // param storageAccountName string = '${shortName}mcjavaservfiles01'
 // param blobName string = 'mcjavablob'
 
-
 // param mngEnvName string = 'mc0101'
 
 // param workloadProfiles array = [
@@ -57,35 +56,18 @@
 //   }
 // ]
 
+module vnet 'br/public:avm/res/network/virtual-network:0.x.x' = {}
 
-module network 'network.main.bicep'
+module pdnssto 'br/public:avm/res/network/private-dns-zone:0.x.x' = {}
 
-module vnet 'br/public:avm/res/network/virtual-network:0.x.x' = {
+module pip 'br/public:avm/res/network/public-ip-address:0.x.x' = {}
 
-}
+module storageAccount 'br/public:avm/res/storage/storage-account:0.x.x' = {}
 
-module pdnssto 'br/public:avm/res/network/private-dns-zone:0.x.x' = {
+module workspace 'br/public:avm/res/operational-insights/workspace:0.x.x' = {}
 
-}
+module managedEnvironment 'br/public:avm/res/app/managed-environment:0.x.x' = {}
 
-module pip 'br/public:avm/res/network/public-ip-address:0.x.x' = {
-
-}
-
-module storageAccount 'br/public:avm/res/storage/storage-account:0.x.x' = {
-
-}
-
-module workspace 'br/public:avm/res/operational-insights/workspace:0.x.x' = {
-
-}
-
-module managedEnvironment 'br/public:avm/res/app/managed-environment:0.x.x' = {
-
-}
-
-module capps 'br/public:avm/res/app/container-app:0.x.x' = {
-
-}
+module capps 'br/public:avm/res/app/container-app:0.x.x' = {}
 
 // Container Insights
