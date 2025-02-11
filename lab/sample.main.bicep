@@ -1,5 +1,6 @@
 // Example Parameters:
 
+// @description('ShortName is needed for unique storage account name. Only 5 caracters.')
 // param shortName string = ''
 // param vnetName string = 'vnet-mcjava-priv'
 // param vnetAddressPrefixes array = [
