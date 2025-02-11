@@ -12,15 +12,11 @@ param subnetWebPrefix string = '192.168.1.96/27'
 param subnetAzureFirewallManagementName string = 'AzureFirewallManagementSubnet'
 param subnetAzureFirewallManagementPrefix string = '192.168.1.128/26'
 param pdnsName string = 'privatelink.blob.core.windows.net'
-param midName string = 'mid-mcjava'
-param midTags object = {
-  application: 'mcjava'
-}
-
 param workspaceName string = 'oiwmin001'
 param location string = resourceGroup().location
-param storageAccountName string = 'mcjavaservfiles01'
+param storageAccountName string = 'mcjavaservfiles'
 param blobName string = 'mcjavablob'
+param utcNow string = utcNow(HHmm)
 
 param mngEnvName string = 'mc0101'
 
@@ -65,16 +61,6 @@ module pdnssto 'br/public:avm/res/network/private-dns-zone:0.7.0' = {
   }
 }
 
-module mid 'br/public:avm/res/managed-identity/user-assigned-identity:0.4.0' = {
-  name: midName
-  params: {
-    name: midName
-    tags: {
-      application: 'mcjava'
-    }
-  }
-}
-
 module pip 'br/public:avm/res/network/public-ip-address:0.7.1' = {
   name: '${time}-publicIpAddressDeployment'
   params: {
@@ -113,23 +99,6 @@ module azfw 'br/public:avm/res/network/azure-firewall:0.5.2' = {
     virtualNetworkResourceId: vnet.outputs.resourceId
     location: location
     threatIntelMode: 'Alert'
-    // diagnosticSettings: [
-    //   {
-    //     metricCategories: [
-    //       {
-    //         category: 'AllMetrics'
-    //       }
-    //     ]
-    //     logCategoriesAndGroups: [
-    //       {
-    //         categoryGroup: 'allLogs'
-    //       }
-    //     ]
-    //     name: 'customSetting'
-
-    //     workspaceResourceId: workspace.outputs.resourceId
-    //   }
-    // ]
     networkRuleCollections: [
       {
         name: 'allow-outbound'
@@ -262,9 +231,6 @@ module storageAccount 'br/public:avm/res/storage/storage-account:0.15.0' = {
     location: location
     managedIdentities: {
       systemAssigned: true
-      userAssignedResourceIds: [
-        mid.outputs.resourceId
-      ]
     }
     managementPolicyRules: []
     networkAcls: {

@@ -65,16 +65,12 @@ module pdnssto 'br/public:avm/res/network/private-dns-zone:0.x.x' = {
 
 }
 
-module mid 'br/public:avm/res/managed-identity/user-assigned-identity:0.x.x' = {
-
-}
-
 module pip 'br/public:avm/res/network/public-ip-address:0.x.x' = {
-  
+
 }
 
 module storageAccount 'br/public:avm/res/storage/storage-account:0.x.x' = {
-  
+
 }
 
 module workspace 'br/public:avm/res/operational-insights/workspace:0.x.x' = {
@@ -82,11 +78,11 @@ module workspace 'br/public:avm/res/operational-insights/workspace:0.x.x' = {
 }
 
 module managedEnvironment 'br/public:avm/res/app/managed-environment:0.x.x' = {
-  
+
 }
 
 module capps 'br/public:avm/res/app/container-app:0.x.x' = {
-  
+
 }
 
 // Container Insights
