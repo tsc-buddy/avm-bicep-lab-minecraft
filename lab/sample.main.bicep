@@ -1,5 +1,6 @@
 // Example Parameters:
 
+// param shortName string = ''
 // param vnetName string = 'vnet-mcjava-priv'
 // param vnetAddressPrefixes array = [
 //   '192.168.1.0/24'
@@ -20,7 +21,7 @@
 
 // param workspaceName string = 'oiwmin001'
 // param location string = location
-// param storageAccountName string = 'mcjavaservfiles01'
+// param storageAccountName string = '${shortName}mcjavaservfiles01'
 // param blobName string = 'mcjavablob'
 
 
