@@ -57,6 +57,8 @@
 // ]
 
 
+module network 'network.main.bicep'
+
 module vnet 'br/public:avm/res/network/virtual-network:0.x.x' = {
 
 }
