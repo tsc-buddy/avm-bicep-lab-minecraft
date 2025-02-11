@@ -23,138 +23,26 @@ param mngEnvName string = 'mc0101'
 
 param cappsName string = 'capmcjava01'
 
-module vnet 'br/public:avm/res/network/virtual-network:0.5.2' = {
-  name: '${time}-privateVnet'
-  params: {
-    name: vnetName
-    addressPrefixes: vnetAddressPrefixes
-    subnets: [
-      {
-        name: subnetAzureFirewallName
-        addressPrefix: subnetAzureFirewallPrefix
-      }
-      {
-        name: subnetStorageName
-        addressPrefix: subnetStoragePrefix
-      }
-      {
-        name: subnetWebName
-        addressPrefix: subnetWebPrefix
-        delegation: 'Microsoft.App/environments'
-      }
-      {
-        name: subnetAzureFirewallManagementName
-        addressPrefix: subnetAzureFirewallManagementPrefix
-      }
-    ]
-  }
+resource workspace 'Microsoft.OperationalInsights/workspaces@2023-09-01' existing = {
+  name: workspaceName
 }
 
-module pdnssto 'br/public:avm/res/network/private-dns-zone:0.7.0' = {
-  name: '${time}-storagedns'
-  params: {
-    name: pdnsName
-    virtualNetworkLinks: [
-      {
-        virtualNetworkResourceId: vnet.outputs.resourceId
-      }
-    ]
-  }
+resource vnet 'Microsoft.Network/virtualNetworks@2024-05-01' existing = {
+  name: vnetName
 }
 
-module pip 'br/public:avm/res/network/public-ip-address:0.7.1' = {
-  name: '${time}-publicIpAddressDeployment'
-  params: {
-    // Required parameters
-    name: 'npiawaf001'
-    // Non-required parameters
-
-    diagnosticSettings: [
-      {
-        workspaceResourceId: workspace.outputs.resourceId
-      }
-    ]
-    lock: {
-      kind: 'CanNotDelete'
-      name: 'myCustomLockName'
-    }
-    publicIPAddressVersion: 'IPv4'
-    publicIPAllocationMethod: 'Static'
-    roleAssignments: []
-    skuName: 'Standard'
-    skuTier: 'Regional'
-    tags: {
-      Environment: 'Non-Prod'
-      'hidden-title': 'This is visible in the resource name'
-      Role: 'DeploymentValidation'
-    }
-  }
+resource subnetStorage 'Microsoft.Network/virtualNetworks/subnets@2024-05-01' existing = {
+  name: subnetStorageName
+  parent: vnet
 }
 
-module azfw 'br/public:avm/res/network/azure-firewall:0.5.2' = {
-  name: '${time}-azureFirewallDeployment'
-  params: {
-    // Required parameters
-    name: 'azfw001'
-    azureSkuTier: 'Standard'
-    virtualNetworkResourceId: vnet.outputs.resourceId
-    location: location
-    threatIntelMode: 'Alert'
-    networkRuleCollections: [
-      {
-        name: 'allow-outbound'
-        properties: {
-          action: {
-            type: 'Allow'
-          }
-          priority: 1000
-          rules: [
-            {
-              name: 'allow-all'
-              protocols: [
-                'Any'
-              ]
-              destinationPorts: [
-                '*'
-              ]
-              sourceAddresses: [
-                '*'
-              ]
-              destinationAddresses: [
-                '*'
-              ]
-            }
-          ]
-        }
-      }
-      {
-        name: 'allow-in-minecraft'
-        properties: {
-          action: {
-            type: 'Allow'
-          }
-          priority: 1001
-          rules: [
-            {
-              name: 'allow-in-minecraft'
-              protocols: [
-                'Any'
-              ]
-              sourceAddresses: [
-                '*'
-              ]
-              destinationAddresses: [
-                '192.168.1.96/27'
-              ]
-              destinationPorts: [
-                '25565'
-              ]
-            }
-          ]
-        }
-      }
-    ]
-  }
+resource subnetWeb 'Microsoft.Network/virtualNetworks/subnets@2024-05-01' existing = {
+  name: subnetWebName
+  parent: vnet
+}
+
+resource pdnssto 'Microsoft.Network/privateDnsZones@2024-06-01' existing = {
+  name: pdnsName
 }
 
 module storageAccount 'br/public:avm/res/storage/storage-account:0.15.0' = {
@@ -187,7 +75,7 @@ module storageAccount 'br/public:avm/res/storage/storage-account:0.15.0' = {
           ]
           name: 'customSetting'
 
-          workspaceResourceId: workspace.outputs.resourceId
+          workspaceResourceId: workspace.id
         }
       ]
       lastAccessTimeTrackingPolicyEnabled: true
@@ -201,7 +89,7 @@ module storageAccount 'br/public:avm/res/storage/storage-account:0.15.0' = {
         ]
         name: 'customSetting'
 
-        workspaceResourceId: workspace.outputs.resourceId
+        workspaceResourceId: workspace.id
       }
     ]
     enableHierarchicalNamespace: true
@@ -216,7 +104,7 @@ module storageAccount 'br/public:avm/res/storage/storage-account:0.15.0' = {
             }
           ]
           name: 'customSetting'
-          workspaceResourceId: workspace.outputs.resourceId
+          workspaceResourceId: workspace.id
         }
       ]
       shares: [
@@ -239,12 +127,12 @@ module storageAccount 'br/public:avm/res/storage/storage-account:0.15.0' = {
         privateDnsZoneGroup: {
           privateDnsZoneGroupConfigs: [
             {
-              privateDnsZoneResourceId: pdnssto.outputs.resourceId
+              privateDnsZoneResourceId: pdnssto.id
             }
           ]
         }
         service: 'blob'
-        subnetResourceId: vnet.outputs.subnetResourceIds[1]
+        subnetResourceId: subnetStorage.id
         tags: {
           Environment: 'Non-Prod'
           'hidden-title': 'This is visible in the resource name'
@@ -263,26 +151,16 @@ module storageAccount 'br/public:avm/res/storage/storage-account:0.15.0' = {
   }
 }
 
-module workspace 'br/public:avm/res/operational-insights/workspace:0.9.1' = {
-  name: '${time}-workspaceDeployment'
-  params: {
-    // Required parameters
-    name: workspaceName
-    // Non-required parameters
-    location: location
-  }
-}
-
 module managedEnvironment 'br/public:avm/res/app/managed-environment:0.8.1' = {
   name: '${time}-managedEnvironmentDeployment'
   params: {
     // Required parameters
-    logAnalyticsWorkspaceResourceId: workspace.outputs.resourceId
+    logAnalyticsWorkspaceResourceId: workspace.id
     name: mngEnvName
     // Non-required parameters
     dockerBridgeCidr: '172.16.0.1/28'
     infrastructureResourceGroupName: 'mngmctest01'
-    infrastructureSubnetId: vnet.outputs.subnetResourceIds[2]
+    infrastructureSubnetId: subnetWeb.id
     internal: true
     location: location
     storages: [

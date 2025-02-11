@@ -57,15 +57,17 @@
 //   }
 // ]
 
-module vnet 'br/public:avm/res/network/virtual-network:0.x.x' = {}
+resource workspace 'Microsoft.OperationalInsights/workspaces@2023-09-01' existing = {}
 
-module pdnssto 'br/public:avm/res/network/private-dns-zone:0.x.x' = {}
+resource vnet 'Microsoft.Network/virtualNetworks@2024-05-01' existing = {}
 
-module pip 'br/public:avm/res/network/public-ip-address:0.x.x' = {}
+resource subnetStorage 'Microsoft.Network/virtualNetworks/subnets@2024-05-01' existing = {}
+
+resource subnetWeb 'Microsoft.Network/virtualNetworks/subnets@2024-05-01' existing = {}
+
+resource pdnssto 'Microsoft.Network/privateDnsZones@2024-06-01' existing = {}
 
 module storageAccount 'br/public:avm/res/storage/storage-account:0.x.x' = {}
-
-module workspace 'br/public:avm/res/operational-insights/workspace:0.x.x' = {}
 
 module managedEnvironment 'br/public:avm/res/app/managed-environment:0.x.x' = {}
 
