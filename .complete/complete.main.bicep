@@ -1,3 +1,5 @@
+@description('ShortName is required for a unique storage account name. Only 5 characters.')
+param shortName string = 'mystr'
 param vnetName string = 'vnet-mcjava-priv'
 param vnetAddressPrefixes array = [
   '192.168.1.0/24'
@@ -14,7 +16,7 @@ param subnetAzureFirewallManagementPrefix string = '192.168.1.128/26'
 param pdnsName string = 'privatelink.blob.core.windows.net'
 param workspaceName string = 'oiwmin001'
 param location string = resourceGroup().location
-param storageAccountName string = 'mcjavaservfiles'
+param storageAccountName string = '${shortName}mcjavaservfiles'
 param blobName string = 'mcjavablob'
 
 param mngEnvName string = 'mc0101'
