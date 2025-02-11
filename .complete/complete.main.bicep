@@ -188,6 +188,12 @@ module capps 'br/public:avm/res/app/container-app:0.12.0' = {
           cpu: json('2')
           memory: '4Gi'
         }
+        volumeMounts: [
+          {
+            volumeName: 'mcjavashare'
+            mountPath: '/data'
+          }
+        ]
         env: [
           { name: 'EULA', value: 'true' }
           { name: 'MEMORY', value: '3G' }
@@ -199,9 +205,17 @@ module capps 'br/public:avm/res/app/container-app:0.12.0' = {
         ]
       }
     ]
+    volumes: [
+      {
+        name: 'mcjavashare'
+        storageAccountName: 'mcjavashare'
+        shareName: 'mcjavashare'
+      }
+    ]
     ingressTargetPort: 25565
     workloadProfileName: 'CAW01'
     environmentResourceId: managedEnvironment.outputs.resourceId
   }
 }
+
 // Container Insights
