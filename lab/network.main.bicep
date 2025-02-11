@@ -182,3 +182,5 @@ module managedEnvironment 'br/public:avm/res/app/managed-environment:0.8.1' = {
     ]
   }
 }
+
+output PublicIpAddress string = pip.outputs.ipAddress

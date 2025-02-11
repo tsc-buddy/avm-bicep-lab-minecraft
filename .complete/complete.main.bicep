@@ -207,7 +207,7 @@ module capps 'br/public:avm/res/app/container-app:0.12.0' = {
     volumes: [
       {
         name: 'mcjavashare'
-        storageAccountName: storageAccount.outputs.name
+        storageAccountName: storageAccountName
         shareName: 'mcjavashare'
       }
     ]
