@@ -327,9 +327,9 @@ module capps 'br/public:avm/res/app/container-app:0.12.0' = {
           { name: 'MEMORY', value: '4G' }
           { name: 'DIFFICULTY', value: 'normal' }
           { name: 'SERVER_NAME', value: 'Minecraft' }
-          { name: 'OPS', value: 'DougieMalone' }
+          { name: 'OPS', value: 'mattffffff' }
           { name: 'VIEW_DISTANCE', value: '32' }
-          { name: 'ONLINE_MODE', value: 'false' }
+          { name: 'ONLINE_MODE', value: 'true' }
         ]
       }
     ]
