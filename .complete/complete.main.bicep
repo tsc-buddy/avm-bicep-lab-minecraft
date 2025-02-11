@@ -195,7 +195,7 @@ module capps 'br/public:avm/res/app/container-app:0.12.0' = {
         ]
         env: [
           { name: 'EULA', value: 'true' }
-          { name: 'MEMORY', value: '4G' }
+          { name: 'MEMORY', value: '3G' }
           { name: 'DIFFICULTY', value: 'normal' }
           { name: 'SERVER_NAME', value: 'Minecraft' }
           { name: 'OPS', value: 'mattffffff' }
