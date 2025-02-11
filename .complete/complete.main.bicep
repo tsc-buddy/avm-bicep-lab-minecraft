@@ -1,18 +1,9 @@
 @description('ShortName is required for a unique storage account name. Only 5 characters.')
 param shortName string = 'mystr'
 param vnetName string = 'vnet-mcjava-priv'
-param vnetAddressPrefixes array = [
-  '192.168.1.0/24'
-]
 param time string = utcNow()
-param subnetAzureFirewallName string = 'AzureFirewallSubnet'
-param subnetAzureFirewallPrefix string = '192.168.1.0/26'
 param subnetStorageName string = 'storage'
-param subnetStoragePrefix string = '192.168.1.64/27'
 param subnetWebName string = 'web'
-param subnetWebPrefix string = '192.168.1.96/27'
-param subnetAzureFirewallManagementName string = 'AzureFirewallManagementSubnet'
-param subnetAzureFirewallManagementPrefix string = '192.168.1.128/26'
 param pdnsName string = 'privatelink.blob.core.windows.net'
 param workspaceName string = 'oiwmin001'
 param location string = resourceGroup().location
