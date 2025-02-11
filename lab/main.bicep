@@ -57,6 +57,10 @@
 //   }
 // ]
 
+module network 'network.main.bicep' = {
+  name: 'network'
+}
+
 resource workspace 'Microsoft.OperationalInsights/workspaces@2023-09-01' existing = {}
 
 resource vnet 'Microsoft.Network/virtualNetworks@2024-05-01' existing = {}

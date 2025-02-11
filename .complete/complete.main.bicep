@@ -187,12 +187,6 @@ module capps 'br/public:avm/res/app/container-app:0.12.0' = {
           cpu: json('2')
           memory: '4Gi'
         }
-        volumeMounts: [
-          {
-            volumeName: 'mcjavashare'
-            mountPath: '/data'
-          }
-        ]
         env: [
           { name: 'EULA', value: 'true' }
           { name: 'MEMORY', value: '3G' }
@@ -202,13 +196,6 @@ module capps 'br/public:avm/res/app/container-app:0.12.0' = {
           { name: 'VIEW_DISTANCE', value: '32' }
           { name: 'ONLINE_MODE', value: 'true' }
         ]
-      }
-    ]
-    volumes: [
-      {
-        name: 'mcjavashare'
-        storageAccountName: 'mcjavashare'
-        shareName: 'mcjavashare'
       }
     ]
     ingressTargetPort: 25565
