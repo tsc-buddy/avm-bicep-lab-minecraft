@@ -50,7 +50,7 @@
 //       { name: 'MEMORY', value: '4G' }
 //       { name: 'DIFFICULTY', value: 'normal' }
 //       { name: 'SERVER_NAME', value: 'Minecraft' }
-//       { name: 'OPS', value: 'LurkingMedal140' }
+//       { name: 'OPS', value: 'mattffffff' }
 //       { name: 'VIEW_DISTANCE', value: '32' }
 //     ]
 //   }
