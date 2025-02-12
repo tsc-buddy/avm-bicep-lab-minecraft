@@ -320,7 +320,7 @@ module storageAccount 'br/public:avm/res/storage/storage-account:0.15.0' = {
       }
     ]
     enableHierarchicalNamespace: true
-    enableNfsV3: false
+    enableNfsV3: true
     enableSftp: true
     fileServices: {
       diagnosticSettings: [
