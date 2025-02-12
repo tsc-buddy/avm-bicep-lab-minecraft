@@ -1,80 +1,421 @@
-// Example Parameters:
+@description('ShortName is required for a unique storage account name. Only 5 characters.')
+param shortName string = ''
+param vnetName string = 'vnet-mcjava-priv'
+param vnetAddressPrefixes array = [
+  '192.168.1.0/24'
+]
+param time string = utcNow()
+param subnetAzureFirewallName string = 'AzureFirewallSubnet'
+param subnetAzureFirewallPrefix string = '192.168.1.0/26'
+param subnetStorageName string = 'storage'
+param subnetStoragePrefix string = '192.168.1.64/27'
+param subnetWebName string = 'web'
+param subnetWebPrefix string = '192.168.1.96/27'
+param subnetAzureFirewallManagementName string = 'AzureFirewallManagementSubnet'
+param subnetAzureFirewallManagementPrefix string = '192.168.1.128/26'
+param pdnsName string = 'privatelink.file.core.windows.net'
+param workspaceName string = 'oiwmin001'
+param storageAccountName string = '${shortName}mcjavaservfiles'
+param blobName string = 'mcjavablob'
+param location string = resourceGroup().location
 
-// @description('ShortName is required for a unique storage account name. Only 5 characters.')
-// param shortName string = ''
-// param vnetName string = 'vnet-mcjava-priv'
-// param vnetAddressPrefixes array = [
-//   '192.168.1.0/24'
-// ]
-// param subnetAzureFirewallName string = 'AzureFirewallSubnet'
-// param subnetAzureFirewallPrefix string = '192.168.1.0/26'
-// param subnetStorageName string = 'storage'
-// param subnetStoragePrefix string = '192.168.1.64/27'
-// param subnetWebName string = 'web'
-// param subnetWebPrefix string = '192.168.1.96/27'
-// param subnetAzureFirewallManagementName string = 'AzureFirewallManagementSubnet'
-// param subnetAzureFirewallManagementPrefix string = '192.168.1.128/26'
-// param pdnsName string = 'privatelink.blob.core.windows.net'
-// param midName string = 'mid-mcjava'
-// param midTags object = {
-//   application: 'mcjava'
-// }
+param mngEnvName string = 'mc0101'
+param cappsName string = 'capmcjava01'
 
-// param workspaceName string = 'oiwmin001'
-// param location string = location
-// param storageAccountName string = '${shortName}mcjavaservfiles01'
-// param blobName string = 'mcjavablob'
-
-// param mngEnvName string = 'mc0101'
-
-// param workloadProfiles array = [
-//   {
-//     maximumCount: 3
-//     minimumCount: 0
-//     name: 'CAW01'
-//     workloadProfileType: 'D4'
-//   }
-// ]
-
-// param cappsName string = 'capmcjava01'
-
-// param cappsContainers array = [
-//   {
-//     image: 'docker.io/itzg/minecraft-server'
-//     name: 'minecraft-container'
-//     resources: {
-//       cpu: '2'
-//       memory: '4Gi'
-//     }
-//     env: [
-//       { name: 'EULA', value: 'true' }
-//       { name: 'MEMORY', value: '3G' }
-//       { name: 'DIFFICULTY', value: 'normal' }
-//       { name: 'SERVER_NAME', value: 'Minecraft' }
-//       { name: 'OPS', value: 'mattffffff' }
-//       { name: 'VIEW_DISTANCE', value: '32' }
-//     ]
-//   }
-// ]
-
-module network 'network.main.bicep' = {
-  name: 'network'
+module vnet 'br/public:avm/res/network/virtual-network:0.5.2' = {
+  name: '${time}-privateVnet'
+  params: {
+    name: vnetName
+    addressPrefixes: vnetAddressPrefixes
+    subnets: [
+      {
+        name: subnetAzureFirewallName
+        addressPrefix: subnetAzureFirewallPrefix
+      }
+      {
+        name: subnetStorageName
+        addressPrefix: subnetStoragePrefix
+      }
+      {
+        name: subnetWebName
+        addressPrefix: subnetWebPrefix
+        delegation: 'Microsoft.App/environments'
+      }
+      {
+        name: subnetAzureFirewallManagementName
+        addressPrefix: subnetAzureFirewallManagementPrefix
+      }
+    ]
+  }
 }
 
-resource workspace 'Microsoft.OperationalInsights/workspaces@2023-09-01' existing = {}
+module pdnssto 'br/public:avm/res/network/private-dns-zone:0.7.0' = {
+  name: '${time}-storagedns'
+  params: {
+    name: pdnsName
+    virtualNetworkLinks: [
+      {
+        virtualNetworkResourceId: vnet.outputs.resourceId
+      }
+    ]
+  }
+}
 
-resource vnet 'Microsoft.Network/virtualNetworks@2024-05-01' existing = {}
+module pip 'br/public:avm/res/network/public-ip-address:0.7.1' = {
+  name: '${time}-publicIpAddressDeployment'
+  params: {
+    // Required parameters
+    name: 'npiawaf001'
+    // Non-required parameters
 
-resource subnetStorage 'Microsoft.Network/virtualNetworks/subnets@2024-05-01' existing = {}
+    diagnosticSettings: []
+    lock: {
+      kind: 'CanNotDelete'
+      name: 'myCustomLockName'
+    }
+    publicIPAddressVersion: 'IPv4'
+    publicIPAllocationMethod: 'Static'
+    roleAssignments: []
+    skuName: 'Standard'
+    skuTier: 'Regional'
+    tags: {
+      Environment: 'Non-Prod'
+      'hidden-title': 'This is visible in the resource name'
+      Role: 'DeploymentValidation'
+    }
+  }
+}
 
-resource subnetWeb 'Microsoft.Network/virtualNetworks/subnets@2024-05-01' existing = {}
+module firewallPolicy 'br/public:avm/res/network/firewall-policy:0.2.0' = {
+  name: 'firewallPolicyDeployment'
+  params: {
+    // Required parameters
+    name: 'afwp01'
+    // Non-required parameters
+    allowSqlRedirect: true
+    autoLearnPrivateRanges: 'Enabled'
+    location: location
+    ruleCollectionGroups: [
+      {
+        name: 'outbound'
+        priority: 5000
+        ruleCollections: [
+          {
+            action: {
+              type: 'Allow'
+            }
+            name: 'collection-out'
+            priority: 5555
+            ruleCollectionType: 'FirewallPolicyFilterRuleCollection'
+            rules: [
+              {
+                targetUrls: [
+                  '*'
+                ]
+                protocols: [
+                  {
+                    port: 80
+                    protocolType: 'http'
+                  }
+                  {
+                    port: 443
+                    protocolType: 'https'
+                  }
+                ]
+                name: 'rule001'
+                ruleType: 'ApplicationRule'
+                sourceAddresses: [
+                  vnetAddressPrefixes[0]
+                ]
+                sourceIpGroups: []
+              }
+              {
+                destinationAddresses: [
+                  '*'
+                ]
+                destinationFqdns: []
+                destinationIpGroups: []
+                destinationPorts: [
+                  '*'
+                ]
+                ipProtocols: [
+                  'TCP'
+                  'UDP'
+                ]
+                name: 'rule002'
+                ruleType: 'NetworkRule'
+                sourceAddresses: [
+                  vnetAddressPrefixes[0]
+                ]
+                sourceIpGroups: []
+              }
+            ]
+          }
+          {
+            action: {
+              type: 'Allow'
+            }
+            name: 'collection'
+            priority: 5555
+            ruleCollectionType: 'FirewallPolicyFilterRuleCollection'
+            rules: [
+              {
+                destinationAddresses: [
+                  managedEnvironment.outputs.staticIp
+                ]
+                destinationFqdns: []
+                destinationIpGroups: []
+                destinationPorts: [
+                  '25565'
+                ]
+                ipProtocols: [
+                  'TCP'
+                ]
+                name: 'rule001'
+                ruleType: 'NetworkRule'
+                sourceAddresses: [
+                  '*'
+                ]
+                sourceIpGroups: []
+              }
+              {
+                destinationAddresses: [
+                  pip.outputs.ipAddress
+                ]
+                destinationPorts: [
+                  '25565'
+                ]
+                ipProtocols: [
+                  'TCP'
+                ]
+                ruleType: 'NatRule'
+                sourceAddresses: [
+                  '*'
+                ]
+                sourceIpGroups: []
+                translatedAddress: managedEnvironment.outputs.staticIp
+              }
+            ]
+          }
+        ]
+      }
+    ]
+    tags: {
+      Environment: 'Non-Prod'
+      'hidden-title': 'This is visible in the resource name'
+      Role: 'DeploymentValidation'
+    }
+    tier: 'Premium'
+  }
+}
 
-resource pdnssto 'Microsoft.Network/privateDnsZones@2024-06-01' existing = {}
+module azfw 'br/public:avm/res/network/azure-firewall:0.5.2' = {
+  name: '${time}-azureFirewallDeployment'
+  params: {
+    // Required parameters
+    name: 'azfw001'
+    azureSkuTier: 'Standard'
+    virtualNetworkResourceId: vnet.outputs.resourceId
+    location: location
+    threatIntelMode: 'Alert'
+    firewallPolicyId: firewallPolicy.outputs.resourceId
+  }
+}
 
-module storageAccount 'br/public:avm/res/storage/storage-account:0.x.x' = {}
+module workspace 'br/public:avm/res/operational-insights/workspace:0.9.1' = {
+  name: '${time}-workspaceDeployment'
+  params: {
+    // Required parameters
+    name: workspaceName
+    // Non-required parameters
+    location: location
+  }
+}
 
-module managedEnvironment 'br/public:avm/res/app/managed-environment:0.x.x' = {}
+module storageAccount 'br/public:avm/res/storage/storage-account:0.15.0' = {
+  name: '${time}-storageAccountDeployment'
+  params: {
+    // Required parameters
+    name: storageAccountName
+    // Non-required parameters
+    allowSharedKeyAccess: true
+    allowBlobPublicAccess: true
+    blobServices: {
+      automaticSnapshotPolicyEnabled: true
+      containerDeleteRetentionPolicyDays: 10
+      containerDeleteRetentionPolicyEnabled: true
+      containers: [
+        {
+          enableNfsV3AllSquash: true
+          enableNfsV3RootSquash: true
+          name: blobName
+          publicAccess: 'None'
+        }
+      ]
+      deleteRetentionPolicyDays: 9
+      deleteRetentionPolicyEnabled: true
+      diagnosticSettings: [
+        {
+          metricCategories: [
+            {
+              category: 'AllMetrics'
+            }
+          ]
+          name: 'customSetting'
 
-module capps 'br/public:avm/res/app/container-app:0.x.x' = {}
+          workspaceResourceId: workspace.outputs.resourceId
+        }
+      ]
+      lastAccessTimeTrackingPolicyEnabled: true
+    }
+    diagnosticSettings: [
+      {
+        metricCategories: [
+          {
+            category: 'AllMetrics'
+          }
+        ]
+        name: 'customSetting'
 
-// Container Insights
+        workspaceResourceId: workspace.outputs.resourceId
+      }
+    ]
+    enableHierarchicalNamespace: true
+    enableNfsV3: true
+    enableSftp: true
+    fileServices: {
+      diagnosticSettings: [
+        {
+          metricCategories: [
+            {
+              category: 'AllMetrics'
+            }
+          ]
+          name: 'customSetting'
+          workspaceResourceId: workspace.outputs.resourceId
+        }
+      ]
+      shares: [
+        {
+          accessTier: 'Hot'
+          name: 'mcjavashare'
+          shareQuota: 5120
+        }
+      ]
+    }
+    largeFileSharesState: 'Enabled'
+    localUsers: []
+    location: location
+    managedIdentities: {
+      systemAssigned: true
+    }
+    managementPolicyRules: []
+    networkAcls: {
+      bypass: 'AzureServices'
+      defaultAction: 'Allow'
+      ipRules: []
+      virtualNetworkRules: []
+    }
+    privateEndpoints: [
+      {
+        privateDnsZoneGroup: {
+          privateDnsZoneGroupConfigs: [
+            {
+              privateDnsZoneResourceId: pdnssto.outputs.resourceId
+            }
+          ]
+        }
+        service: 'file'
+        subnetResourceId: vnet.outputs.subnetResourceIds[1]
+        tags: {
+          Environment: 'Non-Prod'
+          'hidden-title': 'This is visible in the resource name'
+          Role: 'DeploymentValidation'
+        }
+      }
+    ]
+    requireInfrastructureEncryption: true
+    sasExpirationPeriod: '180.00:00:00'
+    skuName: 'Standard_ZRS'
+    tags: {
+      Environment: 'Non-Prod'
+      'hidden-title': 'This is visible in the resource name'
+      Role: 'DeploymentValidation'
+    }
+  }
+}
+
+module managedEnvironment 'br/public:avm/res/app/managed-environment:0.8.1' = {
+  name: '${time}-managedEnvironmentDeployment'
+  params: {
+    // Required parameters
+    logAnalyticsWorkspaceResourceId: workspace.outputs.resourceId
+    name: mngEnvName
+    // Non-required parameters
+    dockerBridgeCidr: '172.16.0.1/28'
+    infrastructureResourceGroupName: 'mngmctest01'
+    infrastructureSubnetId: vnet.outputs.subnetResourceIds[2]
+    internal: true
+    location: location
+    storages: [
+      {
+        accessMode: 'ReadWrite'
+        storageAccountName: storageAccount.outputs.name
+        shareName: 'mcjavashare'
+        kind: 'SMB'
+      }
+    ]
+    platformReservedCidr: '172.17.17.0/24'
+    platformReservedDnsIP: '172.17.17.17'
+    workloadProfiles: [
+      {
+        maximumCount: 1
+        minimumCount: 0
+        name: 'CAW01'
+        workloadProfileType: 'D4'
+      }
+    ]
+  }
+}
+
+module minecraft 'br/public:avm/res/app/container-app:0.12.0' = {
+  name: '${time}-${cappsName}'
+  params: {
+    name: cappsName
+    containers: [
+      {
+        image: 'docker.io/itzg/minecraft-server'
+        name: 'minecraft'
+        resources: {
+          cpu: json('2')
+          memory: '4Gi'
+        }
+        volumeMounts: [
+          {
+            volumeName: 'mcjavashare'
+            mountPath: '/data'
+          }
+        ]
+        env: [
+          { name: 'EULA', value: 'true' }
+          { name: 'MEMORY', value: '3G' }
+          { name: 'DIFFICULTY', value: 'normal' }
+          { name: 'SERVER_NAME', value: 'Minecraft' }
+          { name: 'OPS', value: 'mattffffff' }
+          { name: 'VIEW_DISTANCE', value: '32' }
+          { name: 'ONLINE_MODE', value: 'true' }
+        ]
+      }
+    ]
+    volumes: [
+      {
+        name: 'mcjavashare'
+        storageName: 'mcjavashare'
+        storageType: 'AzureFile'
+      }
+    ]
+    ingressTargetPort: 25565
+    workloadProfileName: 'CAW01'
+    environmentResourceId: managedEnvironment.outputs.resourceId
+  }
+}

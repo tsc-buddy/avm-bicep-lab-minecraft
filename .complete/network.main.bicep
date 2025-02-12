@@ -96,14 +96,14 @@ module firewallPolicy 'br/public:avm/res/network/firewall-policy:0.2.0' = {
     location: location
     ruleCollectionGroups: [
       {
-        name: 'inbound'
+        name: 'outbound'
         priority: 5000
         ruleCollections: [
           {
             action: {
               type: 'Allow'
             }
-            name: 'collection'
+            name: 'collection-out'
             priority: 5555
             ruleCollectionType: 'FirewallPolicyFilterRuleCollection'
             rules: [
@@ -360,7 +360,7 @@ module managedEnvironment 'br/public:avm/res/app/managed-environment:0.8.1' = {
     platformReservedDnsIP: '172.17.17.17'
     workloadProfiles: [
       {
-        maximumCount: 3
+        maximumCount: 1
         minimumCount: 0
         name: 'CAW01'
         workloadProfileType: 'D4'
