@@ -20,7 +20,6 @@ param blobName string = 'mcjavablob'
 param location string = resourceGroup().location
 
 param mngEnvName string = 'mc0101'
-param cappsName string = 'capmcjava01'
 
 module vnet 'br/public:avm/res/network/virtual-network:0.5.2' = {
   name: '${time}-privateVnet'
@@ -97,143 +96,104 @@ module firewallPolicy 'br/public:avm/res/network/firewall-policy:0.2.0' = {
     location: location
     ruleCollectionGroups: [
       {
-        priority: 1000
         name: 'outbound'
+        priority: 5000
         ruleCollections: [
           {
-            ruleCollectionType: 'FirewallPolicyFilterRuleCollection'
             action: {
               type: 'Allow'
             }
+            name: 'collection-out'
+            priority: 5555
+            ruleCollectionType: 'FirewallPolicyFilterRuleCollection'
             rules: [
               {
-                ruleType: 'ApplicationRule'
-                name: 'vnet-outbound'
-                protocols: [
-                  {
-                    protocolType: 'Https'
-                    port: 443
-                  }
-                  {
-                    protocolType: 'Http'
-                    port: 80
-                  }
-                ]
-                fqdnTags: []
-                webCategories: []
-                targetFqdns: [
+                destinationAddresses: []
+                destinationFqdns: [
                   '*'
                 ]
-                targetUrls: []
-                terminateTLS: false
-                sourceAddresses: [
-                  subnetWebPrefix
+                destinationIpGroups: []
+                destinationPorts: [
+                  '80'
+                  '443'
                 ]
-                destinationAddresses: []
+                ipProtocols: [
+                  'TCP'
+                ]
+                name: 'rule001'
+                ruleType: 'ApplicationRule'
+                sourceAddresses: [
+                  vnetAddressPrefixes[0]
+                ]
                 sourceIpGroups: []
-                httpHeadersToInsert: []
               }
-            ]
-            name: 'vnet-outbound'
-            priority: 300
-          }
-          {
-            ruleCollectionType: 'FirewallPolicyFilterRuleCollection'
-            action: {
-              type: 'Allow'
-            }
-            rules: [
               {
-                ruleType: 'NetworkRule'
-                name: 'nrc-containerapp-out'
+                destinationAddresses: [
+                  '*'
+                ]
+                destinationFqdns: []
+                destinationIpGroups: []
+                destinationPorts: [
+                  '*'
+                ]
                 ipProtocols: [
                   'TCP'
                   'UDP'
                 ]
+                name: 'rule002'
+                ruleType: 'NetworkRule'
                 sourceAddresses: [
-                  subnetWebPrefix
+                  vnetAddressPrefixes[0]
                 ]
                 sourceIpGroups: []
-                destinationAddresses: [
-                  'MicrosoftContainerRegistry'
-                  'AzureFrontDoorFirstParty'
-                  'AzureContainerRegistry'
-                  'AzureActiveDirectory'
-                  'AzureKeyVault'
-                ]
-                destinationIpGroups: []
-                destinationFqdns: []
-                destinationPorts: [
-                  '*'
-                ]
               }
             ]
-            name: 'container-app-outbound'
-            priority: 400
           }
-        ]
-      }
-      {
-        priority: 1100
-        name: 'minecraft-server'
-        ruleCollections: [
           {
-            ruleCollectionType: 'FirewallPolicyFilterRuleCollection'
             action: {
               type: 'Allow'
             }
+            name: 'collection'
+            priority: 5555
+            ruleCollectionType: 'FirewallPolicyFilterRuleCollection'
             rules: [
               {
-                ruleType: 'NetworkRule'
-                name: 'nrc-minecraft-server-in'
-                ipProtocols: [
-                  'TCP'
-                ]
-                sourceAddresses: [
-                  '0.0.0.0/0'
-                ]
-                sourceIpGroups: []
                 destinationAddresses: [
                   managedEnvironment.outputs.staticIp
                 ]
-                destinationIpGroups: []
                 destinationFqdns: []
+                destinationIpGroups: []
                 destinationPorts: [
                   '25565'
                 ]
-              }
-            ]
-            name: 'minecraft-server-in'
-            priority: 200
-          }
-          {
-            ruleCollectionType: 'FirewallPolicyNatRuleCollection'
-            action: {
-              type: 'Dnat'
-            }
-            rules: [
-              {
-                ruleType: 'NatRule'
-                name: 'minecraft-server'
-                translatedAddress: managedEnvironment.outputs.staticIp
-                translatedPort: '25565'
                 ipProtocols: [
                   'TCP'
                 ]
+                name: 'rule001'
+                ruleType: 'NetworkRule'
                 sourceAddresses: [
                   '*'
                 ]
                 sourceIpGroups: []
+              }
+              {
                 destinationAddresses: [
                   pip.outputs.ipAddress
                 ]
                 destinationPorts: [
                   '25565'
                 ]
+                ipProtocols: [
+                  'TCP'
+                ]
+                ruleType: 'NatRule'
+                sourceAddresses: [
+                  '*'
+                ]
+                sourceIpGroups: []
+                translatedAddress: managedEnvironment.outputs.staticIp
               }
             ]
-            name: 'nat-minecraft-server'
-            priority: 100
           }
         ]
       }
@@ -395,14 +355,7 @@ module managedEnvironment 'br/public:avm/res/app/managed-environment:0.8.1' = {
     infrastructureSubnetId: vnet.outputs.subnetResourceIds[2]
     internal: true
     location: location
-    storages: [
-      {
-        accessMode: 'ReadWrite'
-        storageAccountName: storageAccount.outputs.name
-        shareName: 'mcjavashare'
-        kind: 'SMB'
-      }
-    ]
+    storages: []
     platformReservedCidr: '172.17.17.0/24'
     platformReservedDnsIP: '172.17.17.17'
     workloadProfiles: [
@@ -416,44 +369,4 @@ module managedEnvironment 'br/public:avm/res/app/managed-environment:0.8.1' = {
   }
 }
 
-module minecraft 'br/public:avm/res/app/container-app:0.12.0' = {
-  name: '${time}-${cappsName}'
-  params: {
-    name: cappsName
-    containers: [
-      {
-        image: 'docker.io/itzg/minecraft-server'
-        name: 'minecraft'
-        resources: {
-          cpu: json('2')
-          memory: '4Gi'
-        }
-        volumeMounts: [
-          {
-            volumeName: 'mcjavashare'
-            mountPath: '/data'
-          }
-        ]
-        env: [
-          { name: 'EULA', value: 'true' }
-          { name: 'MEMORY', value: '3G' }
-          { name: 'DIFFICULTY', value: 'normal' }
-          { name: 'SERVER_NAME', value: 'Minecraft' }
-          { name: 'OPS', value: 'mattffffff' }
-          { name: 'VIEW_DISTANCE', value: '32' }
-          { name: 'ONLINE_MODE', value: 'true' }
-        ]
-      }
-    ]
-    volumes: [
-      {
-        name: 'mcjavashare'
-        storageName: 'mcjavashare'
-        storageType: 'AzureFile'
-      }
-    ]
-    ingressTargetPort: 25565
-    workloadProfileName: 'CAW01'
-    environmentResourceId: managedEnvironment.outputs.resourceId
-  }
-}
+output PublicIpAddress string = pip.outputs.ipAddress
