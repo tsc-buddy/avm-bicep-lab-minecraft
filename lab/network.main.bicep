@@ -239,6 +239,12 @@ module storageAccount 'br/public:avm/res/storage/storage-account:0.15.0' = {
       systemAssigned: true
     }
     managementPolicyRules: []
+    networkAcls: {
+      bypass: 'AzureServices'
+      defaultAction: 'Allow'
+      ipRules: []
+      virtualNetworkRules: []
+    }
     privateEndpoints: [
       {
         privateDnsZoneGroup: {

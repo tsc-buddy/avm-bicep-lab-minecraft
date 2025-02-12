@@ -195,7 +195,7 @@ resource manEnvStorage 'Microsoft.App/managedEnvironments/storages@2024-10-02-pr
   }
 }
 
-module capps 'br/public:avm/res/app/container-app:0.12.0' = {
+module minecraft 'br/public:avm/res/app/container-app:0.12.0' = {
   name: '${time}-${cappsName}'
   params: {
     name: cappsName
