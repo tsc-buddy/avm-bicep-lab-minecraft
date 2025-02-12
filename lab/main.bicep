@@ -100,77 +100,78 @@ module firewallPolicy 'br/public:avm/res/network/firewall-policy:0.2.0' = {
         priority: 1000
         name: 'outbound'
         ruleCollections: [
-          {
-            ruleCollectionType: 'FirewallPolicyFilterRuleCollection'
-            action: {
-              type: 'Allow'
-            }
-            rules: [
-              {
-                ruleType: 'ApplicationRule'
-                name: 'vnet-outbound'
-                protocols: [
-                  {
-                    protocolType: 'Https'
-                    port: 443
-                  }
-                  {
-                    protocolType: 'Http'
-                    port: 80
-                  }
-                ]
-                fqdnTags: []
-                webCategories: []
-                targetFqdns: [
-                  '*'
-                ]
-                targetUrls: []
-                terminateTLS: false
-                sourceAddresses: [
-                  subnetWebPrefix
-                ]
-                destinationAddresses: []
-                sourceIpGroups: []
-                httpHeadersToInsert: []
-              }
-            ]
-            name: 'vnet-outbound'
-            priority: 300
-          }
-          {
-            ruleCollectionType: 'FirewallPolicyFilterRuleCollection'
-            action: {
-              type: 'Allow'
-            }
-            rules: [
-              {
-                ruleType: 'NetworkRule'
-                name: 'nrc-containerapp-out'
-                ipProtocols: [
-                  'TCP'
-                  'UDP'
-                ]
-                sourceAddresses: [
-                  subnetWebPrefix
-                ]
-                sourceIpGroups: []
-                destinationAddresses: [
-                  'MicrosoftContainerRegistry'
-                  'AzureFrontDoorFirstParty'
-                  'AzureContainerRegistry'
-                  'AzureActiveDirectory'
-                  'AzureKeyVault'
-                ]
-                destinationIpGroups: []
-                destinationFqdns: []
-                destinationPorts: [
-                  '*'
-                ]
-              }
-            ]
-            name: 'container-app-outbound'
-            priority: 400
-          }
+          // {
+          //   ruleCollectionType: 'FirewallPolicyFilterRuleCollection'
+          //   action: {
+          //     type: 'Allow'
+          //   }
+          //   rules: [
+          //     {
+          //       ruleType: 'ApplicationRule'
+          //       name: 'vnet-outbound'
+          //       protocols: [
+          //         {
+          //           protocolType: 'Https'
+          //           port: 443
+          //         }
+          //         {
+          //           protocolType: 'Http'
+          //           port: 80
+          //         }
+          //       ]
+          //       fqdnTags: []
+          //       webCategories: []
+          //       targetFqdns: [
+          //         '*'
+          //       ]
+          //       targetUrls: []
+          //       terminateTLS: false
+          //       sourceAddresses: [
+          //         subnetWebPrefix
+          //       ]
+          //       destinationAddresses: []
+          //       sourceIpGroups: []
+          //       httpHeadersToInsert: []
+          //     }
+          //   ]
+          //   name: 'vnet-outbound'
+          //   priority: 300
+          // }
+          // {
+          //   ruleCollectionType: 'FirewallPolicyFilterRuleCollection'
+          //   action: {
+          //     type: 'Allow'
+          //   }
+          //   rules: [
+          //     {
+          //       ruleType: 'NetworkRule'
+          //       name: 'nrc-containerapp-out'
+          //       ipProtocols: [
+          //         'TCP'
+          //         'UDP'
+          //       ]
+          //       sourceAddresses: [
+          //         subnetWebPrefix
+          //       ]
+          //       sourceIpGroups: []
+          //       destinationAddresses: [
+          //         'MicrosoftContainerRegistry'
+          //         'AzureFrontDoorFirstParty'
+          //         'AzureContainerRegistry'
+          //         'AzureActiveDirectory'
+          //         'AzureKeyVault'
+          //       ]
+          //       destinationIpGroups: []
+          //       destinationFqdns: []
+          //       destinationPorts: [
+          //         '80'
+          //         '443'
+          //       ]
+          //     }
+          //   ]
+          //   name: 'container-app-outbound'
+          //   priority: 400
+          // }
         ]
       }
       {
