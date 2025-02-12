@@ -85,6 +85,111 @@ module pip 'br/public:avm/res/network/public-ip-address:0.7.1' = {
   }
 }
 
+module firewallPolicy 'br/public:avm/res/network/firewall-policy:0.2.0' = {
+  name: 'firewallPolicyDeployment'
+  params: {
+    // Required parameters
+    name: 'afwp01'
+    // Non-required parameters
+    allowSqlRedirect: true
+    autoLearnPrivateRanges: 'Enabled'
+    location: location
+    ruleCollectionGroups: [
+      {
+        name: 'inbound'
+        priority: 5000
+        ruleCollections: [
+          {
+            action: {
+              type: 'Allow'
+            }
+            name: 'collection'
+            priority: 5555
+            ruleCollectionType: 'FirewallPolicyFilterRuleCollection'
+            rules: [
+              {
+                destinationAddresses: []
+                destinationFqdns: [
+                  '*'
+                ]
+                destinationIpGroups: []
+                destinationPorts: [
+                  '80'
+                  '443'
+                ]
+                ipProtocols: [
+                  'TCP'
+                ]
+                name: 'rule001'
+                ruleType: 'ApplicationRule'
+                sourceAddresses: [
+                  vnetAddressPrefixes[0]
+                ]
+                sourceIpGroups: []
+              }
+              {
+                destinationAddresses: [
+                  '*'
+                ]
+                destinationFqdns: []
+                destinationIpGroups: []
+                destinationPorts: [
+                  '*'
+                ]
+                ipProtocols: [
+                  'TCP'
+                  'UDP'
+                ]
+                name: 'rule002'
+                ruleType: 'NetworkRule'
+                sourceAddresses: [
+                  vnetAddressPrefixes[0]
+                ]
+                sourceIpGroups: []
+              }
+            ]
+          }
+          {
+            action: {
+              type: 'Allow'
+            }
+            name: 'collection'
+            priority: 5555
+            ruleCollectionType: 'FirewallPolicyFilterRuleCollection'
+            rules: [
+              {
+                destinationAddresses: [
+                  managedEnvironment.outputs.staticIp
+                ]
+                destinationFqdns: []
+                destinationIpGroups: []
+                destinationPorts: [
+                  '25565'
+                ]
+                ipProtocols: [
+                  'TCP'
+                ]
+                name: 'rule001'
+                ruleType: 'NatRule'
+                sourceAddresses: [
+                  '*'
+                ]
+                sourceIpGroups: []
+              }
+            ]
+          }
+        ]
+      }
+    ]
+    tags: {
+      Environment: 'Non-Prod'
+      'hidden-title': 'This is visible in the resource name'
+      Role: 'DeploymentValidation'
+    }
+    tier: 'Premium'
+  }
+}
+
 module azfw 'br/public:avm/res/network/azure-firewall:0.5.2' = {
   name: '${time}-azureFirewallDeployment'
   params: {
