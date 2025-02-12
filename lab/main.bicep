@@ -278,7 +278,7 @@ module storageAccount 'br/public:avm/res/storage/storage-account:0.15.0' = {
     name: storageAccountName
     // Non-required parameters
     allowSharedKeyAccess: true
-    allowBlobPublicAccess: true
+    allowBlobPublicAccess: false
     blobServices: {
       automaticSnapshotPolicyEnabled: true
       containerDeleteRetentionPolicyDays: 10
@@ -320,7 +320,7 @@ module storageAccount 'br/public:avm/res/storage/storage-account:0.15.0' = {
       }
     ]
     enableHierarchicalNamespace: true
-    enableNfsV3: true
+    enableNfsV3: false
     enableSftp: true
     fileServices: {
       diagnosticSettings: [
