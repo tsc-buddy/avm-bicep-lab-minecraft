@@ -1,3 +1,5 @@
+@description('ShortName is required for a unique storage account name. Only 5 characters.')
+param shortName string = ''
 param vnetName string = 'vnet-mcjava-priv'
 param vnetAddressPrefixes array = [
   '192.168.1.0/24'
@@ -11,8 +13,10 @@ param subnetWebName string = 'web'
 param subnetWebPrefix string = '192.168.1.96/27'
 param subnetAzureFirewallManagementName string = 'AzureFirewallManagementSubnet'
 param subnetAzureFirewallManagementPrefix string = '192.168.1.128/26'
-param pdnsName string = 'privatelink.blob.core.windows.net'
+param pdnsName string = 'privatelink.file.core.windows.net'
 param workspaceName string = 'oiwmin001'
+param storageAccountName string = '${shortName}mcjavaservfiles'
+param blobName string = 'mcjavablob'
 param location string = resourceGroup().location
 
 param mngEnvName string = 'mc0101'
@@ -154,6 +158,113 @@ module workspace 'br/public:avm/res/operational-insights/workspace:0.9.1' = {
     name: workspaceName
     // Non-required parameters
     location: location
+  }
+}
+
+module storageAccount 'br/public:avm/res/storage/storage-account:0.15.0' = {
+  name: '${time}-storageAccountDeployment'
+  params: {
+    // Required parameters
+    name: storageAccountName
+    // Non-required parameters
+    allowSharedKeyAccess: true
+    allowBlobPublicAccess: true
+    blobServices: {
+      automaticSnapshotPolicyEnabled: true
+      containerDeleteRetentionPolicyDays: 10
+      containerDeleteRetentionPolicyEnabled: true
+      containers: [
+        {
+          enableNfsV3AllSquash: true
+          enableNfsV3RootSquash: true
+          name: blobName
+          publicAccess: 'None'
+        }
+      ]
+      deleteRetentionPolicyDays: 9
+      deleteRetentionPolicyEnabled: true
+      diagnosticSettings: [
+        {
+          metricCategories: [
+            {
+              category: 'AllMetrics'
+            }
+          ]
+          name: 'customSetting'
+
+          workspaceResourceId: workspace.outputs.resourceId
+        }
+      ]
+      lastAccessTimeTrackingPolicyEnabled: true
+    }
+    diagnosticSettings: [
+      {
+        metricCategories: [
+          {
+            category: 'AllMetrics'
+          }
+        ]
+        name: 'customSetting'
+
+        workspaceResourceId: workspace.outputs.resourceId
+      }
+    ]
+    enableHierarchicalNamespace: true
+    enableNfsV3: true
+    enableSftp: true
+    fileServices: {
+      diagnosticSettings: [
+        {
+          metricCategories: [
+            {
+              category: 'AllMetrics'
+            }
+          ]
+          name: 'customSetting'
+          workspaceResourceId: workspace.outputs.resourceId
+        }
+      ]
+      shares: [
+        {
+          accessTier: 'Hot'
+          name: 'mcjavashare'
+          shareQuota: 5120
+        }
+      ]
+    }
+    largeFileSharesState: 'Enabled'
+    localUsers: []
+    location: location
+    managedIdentities: {
+      systemAssigned: true
+    }
+    managementPolicyRules: []
+    privateEndpoints: [
+      {
+        privateDnsZoneGroup: {
+          privateDnsZoneGroupConfigs: [
+            {
+              privateDnsZoneResourceId: pdnssto.outputs.resourceId
+            }
+          ]
+        }
+        service: 'file'
+        subnetResourceId: vnet.outputs.subnetResourceIds[1]
+        tags: {
+          Environment: 'Non-Prod'
+          'hidden-title': 'This is visible in the resource name'
+          Role: 'DeploymentValidation'
+        }
+      }
+    ]
+    requireInfrastructureEncryption: true
+    sasExpirationPeriod: '180.00:00:00'
+    skuName: 'Standard_ZRS'
+    tags: {
+      Environment: 'Non-Prod'
+      'hidden-title': 'This is visible in the resource name'
+      Role: 'DeploymentValidation'
+    }
   }
 }
 
