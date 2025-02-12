@@ -97,105 +97,143 @@ module firewallPolicy 'br/public:avm/res/network/firewall-policy:0.2.0' = {
     location: location
     ruleCollectionGroups: [
       {
+        priority: 1000
         name: 'outbound'
-        priority: 5000
         ruleCollections: [
           {
+            ruleCollectionType: 'FirewallPolicyFilterRuleCollection'
             action: {
               type: 'Allow'
             }
-            name: 'collection-out'
-            priority: 5555
-            ruleCollectionType: 'FirewallPolicyFilterRuleCollection'
             rules: [
               {
-                targetUrls: [
-                  '*'
-                ]
+                ruleType: 'ApplicationRule'
+                name: 'vnet-outbound'
                 protocols: [
                   {
-                    port: 80
-                    protocolType: 'http'
+                    protocolType: 'Https'
+                    port: 443
                   }
                   {
-                    port: 443
-                    protocolType: 'https'
+                    protocolType: 'Http'
+                    port: 80
                   }
                 ]
-                name: 'rule001'
-                ruleType: 'ApplicationRule'
+                fqdnTags: []
+                webCategories: []
+                targetFqdns: [
+                  '*'
+                ]
+                targetUrls: []
+                terminateTLS: false
                 sourceAddresses: [
-                  vnetAddressPrefixes[0]
+                  subnetWebPrefix
                 ]
+                destinationAddresses: []
                 sourceIpGroups: []
+                httpHeadersToInsert: []
               }
+            ]
+            name: 'vnet-outbound'
+            priority: 300
+          }
+          {
+            ruleCollectionType: 'FirewallPolicyFilterRuleCollection'
+            action: {
+              type: 'Allow'
+            }
+            rules: [
               {
-                destinationAddresses: [
-                  '*'
-                ]
-                destinationFqdns: []
-                destinationIpGroups: []
-                destinationPorts: [
-                  '*'
-                ]
+                ruleType: 'NetworkRule'
+                name: 'nrc-containerapp-out'
                 ipProtocols: [
                   'TCP'
                   'UDP'
                 ]
-                name: 'rule002'
-                ruleType: 'NetworkRule'
                 sourceAddresses: [
-                  vnetAddressPrefixes[0]
+                  subnetWebPrefix
                 ]
                 sourceIpGroups: []
+                destinationAddresses: [
+                  'MicrosoftContainerRegistry'
+                  'AzureFrontDoorFirstParty'
+                  'AzureContainerRegistry'
+                  'AzureActiveDirectory'
+                  'AzureKeyVault'
+                ]
+                destinationIpGroups: []
+                destinationFqdns: []
+                destinationPorts: [
+                  '*'
+                ]
               }
             ]
+            name: 'container-app-outbound'
+            priority: 400
           }
+        ]
+      }
+      {
+        priority: 1100
+        name: 'minecraft-server'
+        ruleCollections: [
           {
+            ruleCollectionType: 'FirewallPolicyFilterRuleCollection'
             action: {
               type: 'Allow'
             }
-            name: 'collection'
-            priority: 5555
-            ruleCollectionType: 'FirewallPolicyFilterRuleCollection'
             rules: [
               {
-                destinationAddresses: [
-                  managedEnvironment.outputs.staticIp
-                ]
-                destinationFqdns: []
-                destinationIpGroups: []
-                destinationPorts: [
-                  '25565'
-                ]
+                ruleType: 'NetworkRule'
+                name: 'nrc-minecraft-server-in'
                 ipProtocols: [
                   'TCP'
                 ]
-                name: 'rule001'
-                ruleType: 'NetworkRule'
+                sourceAddresses: [
+                  '0.0.0.0/0'
+                ]
+                sourceIpGroups: []
+                destinationAddresses: [
+                  managedEnvironment.outputs.staticIp
+                ]
+                destinationIpGroups: []
+                destinationFqdns: []
+                destinationPorts: [
+                  '25565'
+                ]
+              }
+            ]
+            name: 'minecraft-server-in'
+            priority: 200
+          }
+          {
+            ruleCollectionType: 'FirewallPolicyNatRuleCollection'
+            action: {
+              type: 'Dnat'
+            }
+            rules: [
+              {
+                ruleType: 'NatRule'
+                name: 'minecraft-server'
+                translatedAddress: managedEnvironment.outputs.staticIp
+                translatedPort: '25565'
+                ipProtocols: [
+                  'TCP'
+                ]
                 sourceAddresses: [
                   '*'
                 ]
                 sourceIpGroups: []
-              }
-              {
                 destinationAddresses: [
                   pip.outputs.ipAddress
                 ]
                 destinationPorts: [
                   '25565'
                 ]
-                ipProtocols: [
-                  'TCP'
-                ]
-                ruleType: 'NatRule'
-                sourceAddresses: [
-                  '*'
-                ]
-                sourceIpGroups: []
-                translatedAddress: managedEnvironment.outputs.staticIp
               }
             ]
+            name: 'nat-minecraft-server'
+            priority: 100
           }
         ]
       }
