@@ -170,11 +170,28 @@ module firewallPolicy 'br/public:avm/res/network/firewall-policy:0.2.0' = {
                   'TCP'
                 ]
                 name: 'rule001'
+                ruleType: 'NetworkRule'
+                sourceAddresses: [
+                  '*'
+                ]
+                sourceIpGroups: []
+              }
+              {
+                destinationAddresses: [
+                  pip.outputs.ipAddress
+                ]
+                destinationPorts: [
+                  '25565'
+                ]
+                ipProtocols: [
+                  'TCP'
+                ]
                 ruleType: 'NatRule'
                 sourceAddresses: [
                   '*'
                 ]
                 sourceIpGroups: []
+                translatedAddress: managedEnvironment.outputs.staticIp
               }
             ]
           }
@@ -199,60 +216,7 @@ module azfw 'br/public:avm/res/network/azure-firewall:0.5.2' = {
     virtualNetworkResourceId: vnet.outputs.resourceId
     location: location
     threatIntelMode: 'Alert'
-    networkRuleCollections: [
-      {
-        name: 'allow-outbound'
-        properties: {
-          action: {
-            type: 'Allow'
-          }
-          priority: 1000
-          rules: [
-            {
-              name: 'allow-all'
-              protocols: [
-                'Any'
-              ]
-              destinationPorts: [
-                '*'
-              ]
-              sourceAddresses: [
-                '*'
-              ]
-              destinationAddresses: [
-                '*'
-              ]
-            }
-          ]
-        }
-      }
-      {
-        name: 'allow-in-minecraft'
-        properties: {
-          action: {
-            type: 'Allow'
-          }
-          priority: 1001
-          rules: [
-            {
-              name: 'allow-in-minecraft'
-              protocols: [
-                'Any'
-              ]
-              sourceAddresses: [
-                '*'
-              ]
-              destinationAddresses: [
-                '192.168.1.96/27'
-              ]
-              destinationPorts: [
-                '25565'
-              ]
-            }
-          ]
-        }
-      }
-    ]
+    firewallPolicyId: firewallPolicy.outputs.resourceId
   }
 }
 
