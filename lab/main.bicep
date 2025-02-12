@@ -278,7 +278,7 @@ module storageAccount 'br/public:avm/res/storage/storage-account:0.15.0' = {
     name: storageAccountName
     // Non-required parameters
     allowSharedKeyAccess: true
-    allowBlobPublicAccess: false
+    allowBlobPublicAccess: true
     blobServices: {
       automaticSnapshotPolicyEnabled: true
       containerDeleteRetentionPolicyDays: 10
@@ -351,7 +351,7 @@ module storageAccount 'br/public:avm/res/storage/storage-account:0.15.0' = {
     managementPolicyRules: []
     networkAcls: {
       bypass: 'AzureServices'
-      defaultAction: 'Allow'
+      defaultAction: 'Deny'
       ipRules: []
       virtualNetworkRules: []
     }
