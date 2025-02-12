@@ -86,167 +86,167 @@ module pip 'br/public:avm/res/network/public-ip-address:0.7.1' = {
   }
 }
 
-module firewallPolicy 'br/public:avm/res/network/firewall-policy:0.2.0' = {
-  name: 'firewallPolicyDeployment'
-  params: {
-    // Required parameters
-    name: 'afwp01'
-    // Non-required parameters
-    allowSqlRedirect: true
-    autoLearnPrivateRanges: 'Enabled'
-    location: location
-    ruleCollectionGroups: [
-      // {
-      //   priority: 1000
-      //   name: 'outbound'
-      //   ruleCollections: [
-      // {
-      //   ruleCollectionType: 'FirewallPolicyFilterRuleCollection'
-      //   action: {
-      //     type: 'Allow'
-      //   }
-      //   rules: [
-      //     {
-      //       ruleType: 'ApplicationRule'
-      //       name: 'vnet-outbound'
-      //       protocols: [
-      //         {
-      //           protocolType: 'Https'
-      //           port: 443
-      //         }
-      //         {
-      //           protocolType: 'Http'
-      //           port: 80
-      //         }
-      //       ]
-      //       fqdnTags: []
-      //       webCategories: []
-      //       targetFqdns: [
-      //         '*'
-      //       ]
-      //       targetUrls: []
-      //       terminateTLS: false
-      //       sourceAddresses: [
-      //         subnetWebPrefix
-      //       ]
-      //       destinationAddresses: []
-      //       sourceIpGroups: []
-      //       httpHeadersToInsert: []
-      //     }
-      //   ]
-      //   name: 'vnet-outbound'
-      //   priority: 300
-      // }
-      // {
-      //   ruleCollectionType: 'FirewallPolicyFilterRuleCollection'
-      //   action: {
-      //     type: 'Allow'
-      //   }
-      //   rules: [
-      //     {
-      //       ruleType: 'NetworkRule'
-      //       name: 'nrc-containerapp-out'
-      //       ipProtocols: [
-      //         'TCP'
-      //         'UDP'
-      //       ]
-      //       sourceAddresses: [
-      //         subnetWebPrefix
-      //       ]
-      //       sourceIpGroups: []
-      //       destinationAddresses: [
-      //         'MicrosoftContainerRegistry'
-      //         'AzureFrontDoorFirstParty'
-      //         'AzureContainerRegistry'
-      //         'AzureActiveDirectory'
-      //         'AzureKeyVault'
-      //       ]
-      //       destinationIpGroups: []
-      //       destinationFqdns: []
-      //       destinationPorts: [
-      //         '80'
-      //         '443'
-      //       ]
-      //     }
-      //   ]
-      //   name: 'container-app-outbound'
-      //   priority: 400
-      // }
-      //   ]
-      // }
-      // {
-      //   priority: 1100
-      //   name: 'minecraft-server'
-      //   ruleCollections: [
-      //     {
-      //       ruleCollectionType: 'FirewallPolicyFilterRuleCollection'
-      //       action: {
-      //         type: 'Allow'
-      //       }
-      //       rules: [
-      //         {
-      //           ruleType: 'NetworkRule'
-      //           name: 'nrc-minecraft-server-in'
-      //           ipProtocols: [
-      //             'TCP'
-      //           ]
-      //           sourceAddresses: [
-      //             '0.0.0.0/0'
-      //           ]
-      //           sourceIpGroups: []
-      //           destinationAddresses: [
-      //             managedEnvironment.outputs.staticIp
-      //           ]
-      //           destinationIpGroups: []
-      //           destinationFqdns: []
-      //           destinationPorts: [
-      //             '25565'
-      //           ]
-      //         }
-      //       ]
-      //       name: 'minecraft-server-in'
-      //       priority: 200
-      //     }
-      //     {
-      //       ruleCollectionType: 'FirewallPolicyNatRuleCollection'
-      //       action: {
-      //         type: 'Dnat'
-      //       }
-      //       rules: [
-      //         {
-      //           ruleType: 'NatRule'
-      //           name: 'minecraft-server'
-      //           translatedAddress: managedEnvironment.outputs.staticIp
-      //           translatedPort: '25565'
-      //           ipProtocols: [
-      //             'TCP'
-      //           ]
-      //           sourceAddresses: [
-      //             '*'
-      //           ]
-      //           sourceIpGroups: []
-      //           destinationAddresses: [
-      //             pip.outputs.ipAddress
-      //           ]
-      //           destinationPorts: [
-      //             '25565'
-      //           ]
-      //         }
-      //       ]
-      //       name: 'nat-minecraft-server'
-      //       priority: 100
-      //     }
-      //   ]
-      // }
-    ]
-    tags: {
-      Environment: 'Non-Prod'
-      'hidden-title': 'This is visible in the resource name'
-      Role: 'DeploymentValidation'
-    }
-    tier: 'Premium'
-  }
-}
+// module firewallPolicy 'br/public:avm/res/network/firewall-policy:0.2.0' = {
+//   name: 'firewallPolicyDeployment'
+//   params: {
+//     // Required parameters
+//     name: 'afwp01'
+//     // Non-required parameters
+//     allowSqlRedirect: true
+//     autoLearnPrivateRanges: 'Enabled'
+//     location: location
+//     ruleCollectionGroups: [
+//       // {
+//       //   priority: 1000
+//       //   name: 'outbound'
+//       //   ruleCollections: [
+//       // {
+//       //   ruleCollectionType: 'FirewallPolicyFilterRuleCollection'
+//       //   action: {
+//       //     type: 'Allow'
+//       //   }
+//       //   rules: [
+//       //     {
+//       //       ruleType: 'ApplicationRule'
+//       //       name: 'vnet-outbound'
+//       //       protocols: [
+//       //         {
+//       //           protocolType: 'Https'
+//       //           port: 443
+//       //         }
+//       //         {
+//       //           protocolType: 'Http'
+//       //           port: 80
+//       //         }
+//       //       ]
+//       //       fqdnTags: []
+//       //       webCategories: []
+//       //       targetFqdns: [
+//       //         '*'
+//       //       ]
+//       //       targetUrls: []
+//       //       terminateTLS: false
+//       //       sourceAddresses: [
+//       //         subnetWebPrefix
+//       //       ]
+//       //       destinationAddresses: []
+//       //       sourceIpGroups: []
+//       //       httpHeadersToInsert: []
+//       //     }
+//       //   ]
+//       //   name: 'vnet-outbound'
+//       //   priority: 300
+//       // }
+//       // {
+//       //   ruleCollectionType: 'FirewallPolicyFilterRuleCollection'
+//       //   action: {
+//       //     type: 'Allow'
+//       //   }
+//       //   rules: [
+//       //     {
+//       //       ruleType: 'NetworkRule'
+//       //       name: 'nrc-containerapp-out'
+//       //       ipProtocols: [
+//       //         'TCP'
+//       //         'UDP'
+//       //       ]
+//       //       sourceAddresses: [
+//       //         subnetWebPrefix
+//       //       ]
+//       //       sourceIpGroups: []
+//       //       destinationAddresses: [
+//       //         'MicrosoftContainerRegistry'
+//       //         'AzureFrontDoorFirstParty'
+//       //         'AzureContainerRegistry'
+//       //         'AzureActiveDirectory'
+//       //         'AzureKeyVault'
+//       //       ]
+//       //       destinationIpGroups: []
+//       //       destinationFqdns: []
+//       //       destinationPorts: [
+//       //         '80'
+//       //         '443'
+//       //       ]
+//       //     }
+//       //   ]
+//       //   name: 'container-app-outbound'
+//       //   priority: 400
+//       // }
+//       //   ]
+//       // }
+//       // {
+//       //   priority: 1100
+//       //   name: 'minecraft-server'
+//       //   ruleCollections: [
+//       //     {
+//       //       ruleCollectionType: 'FirewallPolicyFilterRuleCollection'
+//       //       action: {
+//       //         type: 'Allow'
+//       //       }
+//       //       rules: [
+//       //         {
+//       //           ruleType: 'NetworkRule'
+//       //           name: 'nrc-minecraft-server-in'
+//       //           ipProtocols: [
+//       //             'TCP'
+//       //           ]
+//       //           sourceAddresses: [
+//       //             '0.0.0.0/0'
+//       //           ]
+//       //           sourceIpGroups: []
+//       //           destinationAddresses: [
+//       //             managedEnvironment.outputs.staticIp
+//       //           ]
+//       //           destinationIpGroups: []
+//       //           destinationFqdns: []
+//       //           destinationPorts: [
+//       //             '25565'
+//       //           ]
+//       //         }
+//       //       ]
+//       //       name: 'minecraft-server-in'
+//       //       priority: 200
+//       //     }
+//       //     {
+//       //       ruleCollectionType: 'FirewallPolicyNatRuleCollection'
+//       //       action: {
+//       //         type: 'Dnat'
+//       //       }
+//       //       rules: [
+//       //         {
+//       //           ruleType: 'NatRule'
+//       //           name: 'minecraft-server'
+//       //           translatedAddress: managedEnvironment.outputs.staticIp
+//       //           translatedPort: '25565'
+//       //           ipProtocols: [
+//       //             'TCP'
+//       //           ]
+//       //           sourceAddresses: [
+//       //             '*'
+//       //           ]
+//       //           sourceIpGroups: []
+//       //           destinationAddresses: [
+//       //             pip.outputs.ipAddress
+//       //           ]
+//       //           destinationPorts: [
+//       //             '25565'
+//       //           ]
+//       //         }
+//       //       ]
+//       //       name: 'nat-minecraft-server'
+//       //       priority: 100
+//       //     }
+//       //   ]
+//       // }
+//     ]
+//     tags: {
+//       Environment: 'Non-Prod'
+//       'hidden-title': 'This is visible in the resource name'
+//       Role: 'DeploymentValidation'
+//     }
+//     tier: 'Premium'
+//   }
+// }
 
 module azfw 'br/public:avm/res/network/azure-firewall:0.5.2' = {
   name: '${time}-azureFirewallDeployment'
@@ -257,7 +257,7 @@ module azfw 'br/public:avm/res/network/azure-firewall:0.5.2' = {
     virtualNetworkResourceId: vnet.outputs.resourceId
     location: location
     threatIntelMode: 'Alert'
-    firewallPolicyId: firewallPolicy.outputs.resourceId
+    // firewallPolicyId: firewallPolicy.outputs.resourceId
   }
 }
 
