@@ -108,6 +108,7 @@ module azfw 'br/public:avm/res/network/azure-firewall:0.5.2' = {
     location: location
     threatIntelMode: 'Alert'
     firewallPolicyId: fwpip.outputs.resourceId
+    publicIPResourceID: fwpip.outputs.resourceId
   }
 }
 
@@ -190,7 +191,8 @@ module firewallPolicy 'br/public:avm/res/network/firewall-policy:0.2.0' = {
             destinationIpGroups: []
             destinationFqdns: []
             destinationPorts: [
-              '*'
+              '80'
+              '443'
             ]
           }
         ]
@@ -400,21 +402,11 @@ module storageAccount 'br/public:avm/res/storage/storage-account:0.15.0' = {
         }
         service: 'file'
         subnetResourceId: vnet.outputs.subnetResourceIds[1]
-        tags: {
-          Environment: 'Non-Prod'
-          'hidden-title': 'This is visible in the resource name'
-          Role: 'DeploymentValidation'
-        }
       }
     ]
     requireInfrastructureEncryption: true
     sasExpirationPeriod: '180.00:00:00'
     skuName: 'Standard_ZRS'
-    tags: {
-      Environment: 'Non-Prod'
-      'hidden-title': 'This is visible in the resource name'
-      Role: 'DeploymentValidation'
-    }
   }
 }
 
@@ -435,11 +427,7 @@ module pip 'br/public:avm/res/network/public-ip-address:0.7.1' = {
     roleAssignments: []
     skuName: 'Standard'
     skuTier: 'Regional'
-    tags: {
-      Environment: 'Non-Prod'
-      'hidden-title': 'This is visible in the resource name'
-      Role: 'DeploymentValidation'
-    }
+
   }
 }
 
