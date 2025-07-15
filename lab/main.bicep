@@ -1,26 +1,31 @@
 @description('ShortName is required for a unique storage account name. Only 5 characters.')
-param shortName string = ''
-param vnetName string = 'vnet-mcjava-priv'
+param shortName string = 'bad'
+param vnetName string = 'mcjava-vnet'
 param vnetAddressPrefixes array = [
-  '192.168.1.0/24'
+  '10.0.0.0/16'
 ]
 param time string = utcNow()
 param subnetAzureFirewallName string = 'AzureFirewallSubnet'
-param subnetAzureFirewallPrefix string = '192.168.1.0/26'
+param subnetWebName string = 'app'
 param subnetStorageName string = 'storage'
-param subnetStoragePrefix string = '192.168.1.64/27'
-param subnetWebName string = 'web'
-param subnetWebPrefix string = '192.168.1.96/27'
+param subnetAzureFirewallPrefix string = '10.0.0.0/24'
+param subnetStoragePrefix string = '10.0.1.0/24'
+param subnetWebPrefix string = '10.0.2.0/24'
+param subnetAzureFirewallManagementPrefix string = '10.0.3.0/26'
 param subnetAzureFirewallManagementName string = 'AzureFirewallManagementSubnet'
-param subnetAzureFirewallManagementPrefix string = '192.168.1.128/26'
-param pdnsName string = 'privatelink.file.core.windows.net'
-param workspaceName string = 'oiwmin001'
-param storageAccountName string = '${shortName}mcjavaservfiles'
+param pdnsName string = 'privatelink.file.${environment().suffixes.storage}'
+param workspaceName string = 'mcjava-law'
+param storageAccountName string = 'mcjavastg${shortName}'
 param blobName string = 'mcjavablob'
 param location string = resourceGroup().location
+param mngEnvName string = 'mcjava-cenv'
+param cappsName string = 'mcjava-capps01'
 
-param mngEnvName string = 'mc0101'
-param cappsName string = 'capmcjava01'
+
+/*
+//\\//\\ Networking Components //\\//\\
+This section creates the virtual network, private DNS zone, public IP address, route tables, Azure Firewall & policies.
+*/
 
 module vnet 'br/public:avm/res/network/virtual-network:0.5.2' = {
   name: '${time}-privateVnet'
@@ -35,11 +40,14 @@ module vnet 'br/public:avm/res/network/virtual-network:0.5.2' = {
       {
         name: subnetStorageName
         addressPrefix: subnetStoragePrefix
+        defaultOutboundAccess: false
+        privateLinkServiceNetworkPolicies: 'Enabled'
       }
       {
         name: subnetWebName
         addressPrefix: subnetWebPrefix
         delegation: 'Microsoft.App/environments'
+        defaultOutboundAccess: false
       }
       {
         name: subnetAzureFirewallManagementName
@@ -49,7 +57,24 @@ module vnet 'br/public:avm/res/network/virtual-network:0.5.2' = {
   }
 }
 
-module pdnssto 'br/public:avm/res/network/private-dns-zone:0.7.0' = {
+module routeTable 'br/public:avm/res/network/route-table:0.4.1' = {
+  name: 'routeTableDeployment'
+  params: {
+    name: 'mcjava-rt'
+    routes: [
+      {
+        name: 'to-firewall'
+        properties: {
+          addressPrefix: '0.0.0.0/0'
+          nextHopIpAddress: azfw.outputs.privateIp
+          nextHopType: 'VirtualAppliance'
+        }
+      }
+    ]
+  }
+}
+
+module privateDNSZone 'br/public:avm/res/network/private-dns-zone:0.7.0' = {
   name: '${time}-storagedns'
   params: {
     name: pdnsName
@@ -61,212 +86,221 @@ module pdnssto 'br/public:avm/res/network/private-dns-zone:0.7.0' = {
   }
 }
 
-module pip 'br/public:avm/res/network/public-ip-address:0.7.1' = {
-  name: '${time}-publicIpAddressDeployment'
+module fwpip 'br/public:avm/res/network/public-ip-address:0.7.1' = {
+  name: '${time}-fwpipDeployment'
   params: {
-    // Required parameters
-    name: 'npiawaf001'
-    // Non-required parameters
-
+    name: 'mcjava-fwpip'
     diagnosticSettings: []
-    lock: {
-      kind: 'CanNotDelete'
-      name: 'myCustomLockName'
-    }
     publicIPAddressVersion: 'IPv4'
     publicIPAllocationMethod: 'Static'
     roleAssignments: []
     skuName: 'Standard'
     skuTier: 'Regional'
-    tags: {
-      Environment: 'Non-Prod'
-      'hidden-title': 'This is visible in the resource name'
-      Role: 'DeploymentValidation'
-    }
   }
 }
-
-// module firewallPolicy 'br/public:avm/res/network/firewall-policy:0.2.0' = {
-//   name: 'firewallPolicyDeployment'
-//   params: {
-//     // Required parameters
-//     name: 'afwp01'
-//     // Non-required parameters
-//     allowSqlRedirect: true
-//     autoLearnPrivateRanges: 'Enabled'
-//     location: location
-//     ruleCollectionGroups: [
-//       // {
-//       //   priority: 1000
-//       //   name: 'outbound'
-//       //   ruleCollections: [
-//       // {
-//       //   ruleCollectionType: 'FirewallPolicyFilterRuleCollection'
-//       //   action: {
-//       //     type: 'Allow'
-//       //   }
-//       //   rules: [
-//       //     {
-//       //       ruleType: 'ApplicationRule'
-//       //       name: 'vnet-outbound'
-//       //       protocols: [
-//       //         {
-//       //           protocolType: 'Https'
-//       //           port: 443
-//       //         }
-//       //         {
-//       //           protocolType: 'Http'
-//       //           port: 80
-//       //         }
-//       //       ]
-//       //       fqdnTags: []
-//       //       webCategories: []
-//       //       targetFqdns: [
-//       //         '*'
-//       //       ]
-//       //       targetUrls: []
-//       //       terminateTLS: false
-//       //       sourceAddresses: [
-//       //         subnetWebPrefix
-//       //       ]
-//       //       destinationAddresses: []
-//       //       sourceIpGroups: []
-//       //       httpHeadersToInsert: []
-//       //     }
-//       //   ]
-//       //   name: 'vnet-outbound'
-//       //   priority: 300
-//       // }
-//       // {
-//       //   ruleCollectionType: 'FirewallPolicyFilterRuleCollection'
-//       //   action: {
-//       //     type: 'Allow'
-//       //   }
-//       //   rules: [
-//       //     {
-//       //       ruleType: 'NetworkRule'
-//       //       name: 'nrc-containerapp-out'
-//       //       ipProtocols: [
-//       //         'TCP'
-//       //         'UDP'
-//       //       ]
-//       //       sourceAddresses: [
-//       //         subnetWebPrefix
-//       //       ]
-//       //       sourceIpGroups: []
-//       //       destinationAddresses: [
-//       //         'MicrosoftContainerRegistry'
-//       //         'AzureFrontDoorFirstParty'
-//       //         'AzureContainerRegistry'
-//       //         'AzureActiveDirectory'
-//       //         'AzureKeyVault'
-//       //       ]
-//       //       destinationIpGroups: []
-//       //       destinationFqdns: []
-//       //       destinationPorts: [
-//       //         '80'
-//       //         '443'
-//       //       ]
-//       //     }
-//       //   ]
-//       //   name: 'container-app-outbound'
-//       //   priority: 400
-//       // }
-//       //   ]
-//       // }
-//       // {
-//       //   priority: 1100
-//       //   name: 'minecraft-server'
-//       //   ruleCollections: [
-//       //     {
-//       //       ruleCollectionType: 'FirewallPolicyFilterRuleCollection'
-//       //       action: {
-//       //         type: 'Allow'
-//       //       }
-//       //       rules: [
-//       //         {
-//       //           ruleType: 'NetworkRule'
-//       //           name: 'nrc-minecraft-server-in'
-//       //           ipProtocols: [
-//       //             'TCP'
-//       //           ]
-//       //           sourceAddresses: [
-//       //             '0.0.0.0/0'
-//       //           ]
-//       //           sourceIpGroups: []
-//       //           destinationAddresses: [
-//       //             managedEnvironment.outputs.staticIp
-//       //           ]
-//       //           destinationIpGroups: []
-//       //           destinationFqdns: []
-//       //           destinationPorts: [
-//       //             '25565'
-//       //           ]
-//       //         }
-//       //       ]
-//       //       name: 'minecraft-server-in'
-//       //       priority: 200
-//       //     }
-//       //     {
-//       //       ruleCollectionType: 'FirewallPolicyNatRuleCollection'
-//       //       action: {
-//       //         type: 'Dnat'
-//       //       }
-//       //       rules: [
-//       //         {
-//       //           ruleType: 'NatRule'
-//       //           name: 'minecraft-server'
-//       //           translatedAddress: managedEnvironment.outputs.staticIp
-//       //           translatedPort: '25565'
-//       //           ipProtocols: [
-//       //             'TCP'
-//       //           ]
-//       //           sourceAddresses: [
-//       //             '*'
-//       //           ]
-//       //           sourceIpGroups: []
-//       //           destinationAddresses: [
-//       //             pip.outputs.ipAddress
-//       //           ]
-//       //           destinationPorts: [
-//       //             '25565'
-//       //           ]
-//       //         }
-//       //       ]
-//       //       name: 'nat-minecraft-server'
-//       //       priority: 100
-//       //     }
-//       //   ]
-//       // }
-//     ]
-//     tags: {
-//       Environment: 'Non-Prod'
-//       'hidden-title': 'This is visible in the resource name'
-//       Role: 'DeploymentValidation'
-//     }
-//     tier: 'Premium'
-//   }
-// }
 
 module azfw 'br/public:avm/res/network/azure-firewall:0.5.2' = {
   name: '${time}-azureFirewallDeployment'
   params: {
-    // Required parameters
-    name: 'azfw001'
+    name: 'mcjava-azfw'
     azureSkuTier: 'Standard'
     virtualNetworkResourceId: vnet.outputs.resourceId
     location: location
     threatIntelMode: 'Alert'
-    // firewallPolicyId: firewallPolicy.outputs.resourceId
+    firewallPolicyId: fwpip.outputs.resourceId
   }
 }
+
+module firewallPolicy 'br/public:avm/res/network/firewall-policy:0.2.0' = {
+  name: 'firewallPolicyDeployment'
+  params: {
+    // Required parameters
+    name: 'mcjava-afwp'
+    // Non-required parameters
+    allowSqlRedirect: true
+    autoLearnPrivateRanges: 'Enabled'
+    location: location
+
+    ruleCollectionGroups: [
+      {
+        priority: 1000
+        name: 'outbound'
+        ruleCollections: [
+      {
+        ruleCollectionType: 'FirewallPolicyFilterRuleCollection'
+        action: {
+          type: 'Allow'
+        }
+        rules: [
+          {
+            ruleType: 'ApplicationRule'
+            name: 'vnet-outbound'
+            protocols: [
+              {
+                protocolType: 'Https'
+                port: 443
+              }
+              {
+                protocolType: 'Http'
+                port: 80
+              }
+            ]
+            fqdnTags: []
+            webCategories: []
+            targetFqdns: [
+              '*'
+            ]
+            targetUrls: []
+            terminateTLS: false
+            sourceAddresses: [
+              subnetWebPrefix
+            ]
+            destinationAddresses: []
+            sourceIpGroups: []
+            httpHeadersToInsert: []
+          }
+        ]
+        name: 'vnet-outbound'
+        priority: 300
+      }
+      {
+        ruleCollectionType: 'FirewallPolicyFilterRuleCollection'
+        action: {
+          type: 'Allow'
+        }
+        rules: [
+          {
+            ruleType: 'NetworkRule'
+            name: 'nrc-containerapp-out'
+            ipProtocols: [
+              'TCP'
+              'UDP'
+            ]
+            sourceAddresses: [
+              subnetWebPrefix
+            ]
+            sourceIpGroups: []
+            destinationAddresses: [
+              'MicrosoftContainerRegistry'
+              'AzureFrontDoorFirstParty'
+              'AzureContainerRegistry'
+              'AzureActiveDirectory'
+              'AzureKeyVault'
+            ]
+            destinationIpGroups: []
+            destinationFqdns: []
+            destinationPorts: [
+              '*'
+            ]
+          }
+        ]
+        name: 'container-app-outbound'
+        priority: 400
+      }
+        ]
+      }
+      {
+        priority: 1100
+        name: 'minecraft-server'
+        ruleCollections: [
+          {
+            ruleCollectionType: 'FirewallPolicyFilterRuleCollection'
+            action: {
+              type: 'Allow'
+            }
+            rules: [
+              {
+                ruleType: 'NetworkRule'
+                name: 'nrc-minecraft-server-in'
+                ipProtocols: [
+                  'TCP'
+                ]
+                sourceAddresses: [
+                  '0.0.0.0/0'
+                ]
+                sourceIpGroups: []
+                destinationAddresses: [
+                  managedEnvironment.outputs.staticIp
+                ]
+                destinationIpGroups: []
+                destinationFqdns: []
+                destinationPorts: [
+                  '25565'
+                ]
+              }
+            ]
+            name: 'minecraft-server-in'
+            priority: 200
+          }
+          {
+            ruleCollectionType: 'FirewallPolicyNatRuleCollection'
+            action: {
+              type: 'Dnat'
+            }
+            rules: [
+              {
+                ruleType: 'NatRule'
+                name: 'minecraft-server'
+                translatedAddress: managedEnvironment.outputs.staticIp
+                translatedPort: '25565'
+                ipProtocols: [
+                  'TCP'
+                ]
+                sourceAddresses: [
+                  '*'
+                ]
+                sourceIpGroups: []
+                destinationAddresses: [
+                  fwpip.outputs.ipAddress
+                ]
+                destinationPorts: [
+                  '25565'
+                ]
+              }
+            ]
+            name: 'nat-minecraft-server'
+            priority: 100
+          }
+        ]
+      }
+    ]
+    tier: 'Standard'
+    defaultWorkspaceId: workspace.outputs.resourceId
+    enableProxy: true
+  }
+}
+
+// Associate the route table with the storage subnet
+resource storageSubnetRTAssociation 'Microsoft.Network/virtualNetworks/subnets@2023-04-01' = {
+  name: '${vnetName}/${subnetStorageName}'
+  properties: {
+    addressPrefix: subnetStoragePrefix
+    privateLinkServiceNetworkPolicies: 'Enabled'
+    routeTable: {
+      id: routeTable.outputs.resourceId
+    }
+  }
+}
+
+resource appSubnetRTAssociation 'Microsoft.Network/virtualNetworks/subnets@2023-04-01' = {
+  name: '${vnetName}/${subnetWebName}'
+  properties: {
+    addressPrefix: subnetWebPrefix
+    routeTable: {
+      id: routeTable.outputs.resourceId
+    }
+  }
+}
+
+/*
+//\\//\\ Monitoring & Storage Components //\\//\\
+This section creates the Log Analytics workspace and storage account.
+*/
 
 module workspace 'br/public:avm/res/operational-insights/workspace:0.9.1' = {
   name: '${time}-workspaceDeployment'
   params: {
-    // Required parameters
     name: workspaceName
-    // Non-required parameters
     location: location
   }
 }
@@ -360,7 +394,7 @@ module storageAccount 'br/public:avm/res/storage/storage-account:0.15.0' = {
         privateDnsZoneGroup: {
           privateDnsZoneGroupConfigs: [
             {
-              privateDnsZoneResourceId: pdnssto.outputs.resourceId
+              privateDnsZoneResourceId: privateDNSZone.outputs.resourceId
             }
           ]
         }
@@ -376,6 +410,31 @@ module storageAccount 'br/public:avm/res/storage/storage-account:0.15.0' = {
     requireInfrastructureEncryption: true
     sasExpirationPeriod: '180.00:00:00'
     skuName: 'Standard_ZRS'
+    tags: {
+      Environment: 'Non-Prod'
+      'hidden-title': 'This is visible in the resource name'
+      Role: 'DeploymentValidation'
+    }
+  }
+}
+
+/*
+//\\//\\ Compute Components//\\//\\
+This section creates the managed environment, container app and public IP address.
+*/
+
+module pip 'br/public:avm/res/network/public-ip-address:0.7.1' = {
+  name: '${time}-publicIpAddressDeployment'
+  params: {
+    // Required parameters
+    name: 'mcjava-cenv-pip'
+    // Non-required parameters
+    diagnosticSettings: []
+    publicIPAddressVersion: 'IPv4'
+    publicIPAllocationMethod: 'Static'
+    roleAssignments: []
+    skuName: 'Standard'
+    skuTier: 'Regional'
     tags: {
       Environment: 'Non-Prod'
       'hidden-title': 'This is visible in the resource name'
@@ -424,7 +483,7 @@ module minecraft 'br/public:avm/res/app/container-app:0.12.0' = {
     containers: [
       {
         image: 'docker.io/itzg/minecraft-server'
-        name: 'minecraft'
+        name: 'minecraft-server'
         resources: {
           cpu: json('2')
           memory: '4Gi'
@@ -438,11 +497,9 @@ module minecraft 'br/public:avm/res/app/container-app:0.12.0' = {
         env: [
           { name: 'EULA', value: 'true' }
           { name: 'MEMORY', value: '3G' }
-          { name: 'DIFFICULTY', value: 'normal' }
-          { name: 'SERVER_NAME', value: 'Minecraft' }
           { name: 'OPS', value: 'mattffffff' }
-          { name: 'VIEW_DISTANCE', value: '32' }
-          { name: 'ONLINE_MODE', value: 'true' }
+          { name: 'VERSION', value: '1.21.7'}
+          { name: 'VIEW_DISTANCE', value: '16' }
         ]
       }
     ]
@@ -454,7 +511,13 @@ module minecraft 'br/public:avm/res/app/container-app:0.12.0' = {
       }
     ]
     ingressTargetPort: 25565
+    exposedPort: 25565
+    ingressTransport: 'tcp'
+    trafficWeight: 100
+    trafficLatestRevision: true
     workloadProfileName: 'CAW01'
     environmentResourceId: managedEnvironment.outputs.resourceId
+    scaleMaxReplicas: 1
+    scaleMinReplicas: 1
   }
 }
