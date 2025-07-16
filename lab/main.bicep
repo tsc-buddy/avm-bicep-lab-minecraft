@@ -1,5 +1,5 @@
 @description('ShortName is required for a unique storage account name. Only 5 characters.')
-param shortName string = 'k11'
+param shortName string
 
 @description('Address prefixes for the virtual network.')
 param vnetAddressPrefixes array = [
