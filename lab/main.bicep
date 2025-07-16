@@ -1,31 +1,48 @@
 @description('ShortName is required for a unique storage account name. Only 5 characters.')
-param shortName string = 'bad'
-param vnetName string = 'mcjava-vnet'
+param shortName string = 'k11'
+
+@description('Address prefixes for the virtual network.')
 param vnetAddressPrefixes array = [
-  '10.0.0.0/16'
+  '192.168.1.0/24'
 ]
-param time string = utcNow()
+@description('Name of the Azure Firewall subnet.')
 param subnetAzureFirewallName string = 'AzureFirewallSubnet'
-param subnetWebName string = 'app'
+@description('Address prefix for the Azure Firewall subnet.')
+param subnetAzureFirewallPrefix string = '192.168.1.0/26'
+@description('Name of the storage subnet.')
 param subnetStorageName string = 'storage'
-param subnetAzureFirewallPrefix string = '10.0.0.0/24'
-param subnetStoragePrefix string = '10.0.1.0/24'
-param subnetWebPrefix string = '10.0.2.0/24'
-param subnetAzureFirewallManagementPrefix string = '10.0.3.0/26'
+@description('Address prefix for the storage subnet.')
+param subnetStoragePrefix string = '192.168.1.64/27'
+@description('Name of the web subnet.')
+param subnetWebName string = 'app'
+@description('Address prefix for the web subnet.')
+param subnetWebPrefix string = '192.168.1.96/27'
+@description('Name of the Azure Firewall management subnet.')
 param subnetAzureFirewallManagementName string = 'AzureFirewallManagementSubnet'
-param pdnsName string = 'privatelink.file.${environment().suffixes.storage}'
-param workspaceName string = 'mcjava-law'
-param storageAccountName string = 'mcjavastg${shortName}'
+@description('Address prefix for the Azure Firewall management subnet.')
+param subnetAzureFirewallManagementPrefix string = '192.168.1.128/26'
+@description('Private DNS zone name for the storage account.')
+param pdnsName string = 'privatelink.file.core.windows.net'
+@description('Blob name for the storage account.')
 param blobName string = 'mcjavablob'
+@description('Location for all resources.')
 param location string = resourceGroup().location
-param mngEnvName string = 'mcjava-cenv'
-param cappsName string = 'mcjava-capps01'
+@description('Current UTC time, used for resource naming.')
+param time string = utcNow()
 
+var mngEnvName = 'cenv-mcjava-${shortName}'
+var cappsName = 'capp-mcjava-${shortName}'
+var vnetName = 'vnet-mcjava-${shortName}'
+var storageAccountName = 'mcjavafiles${shortName}'
+var workspaceName = 'law-mcjava-${shortName}'
+var cenvpipName = 'cenvpip-mcjava-${shortName}'
+var azfwName = 'azfw-mcjava-${shortName}'
+var azfwpName = 'azfwp-mcjava-${shortName}'
+var azfwpipName = 'azfwpip-mcjava-${shortName}'
 
-/*
-//\\//\\ Networking Components //\\//\\
-This section creates the virtual network, private DNS zone, public IP address, route tables, Azure Firewall & policies.
-*/
+////////////////
+// Networking //
+////////////////
 
 module vnet 'br/public:avm/res/network/virtual-network:0.5.2' = {
   name: '${time}-privateVnet'
@@ -40,14 +57,13 @@ module vnet 'br/public:avm/res/network/virtual-network:0.5.2' = {
       {
         name: subnetStorageName
         addressPrefix: subnetStoragePrefix
-        defaultOutboundAccess: false
         privateLinkServiceNetworkPolicies: 'Enabled'
+        defaultOutboundAccess: false
       }
       {
         name: subnetWebName
         addressPrefix: subnetWebPrefix
         delegation: 'Microsoft.App/environments'
-        defaultOutboundAccess: false
       }
       {
         name: subnetAzureFirewallManagementName
@@ -57,24 +73,7 @@ module vnet 'br/public:avm/res/network/virtual-network:0.5.2' = {
   }
 }
 
-module routeTable 'br/public:avm/res/network/route-table:0.4.1' = {
-  name: 'routeTableDeployment'
-  params: {
-    name: 'mcjava-rt'
-    routes: [
-      {
-        name: 'to-firewall'
-        properties: {
-          addressPrefix: '0.0.0.0/0'
-          nextHopIpAddress: azfw.outputs.privateIp
-          nextHopType: 'VirtualAppliance'
-        }
-      }
-    ]
-  }
-}
-
-module privateDNSZone 'br/public:avm/res/network/private-dns-zone:0.7.0' = {
+module pdnssto 'br/public:avm/res/network/private-dns-zone:0.7.0' = {
   name: '${time}-storagedns'
   params: {
     name: pdnsName
@@ -87,9 +86,28 @@ module privateDNSZone 'br/public:avm/res/network/private-dns-zone:0.7.0' = {
 }
 
 module fwpip 'br/public:avm/res/network/public-ip-address:0.7.1' = {
-  name: '${time}-fwpipDeployment'
+  name: '${time}-azfwpipDeployment'
   params: {
-    name: 'mcjava-fwpip'
+    // Required parameters
+    name: azfwpipName
+    // Non-required parameters
+
+    diagnosticSettings: []
+    publicIPAddressVersion: 'IPv4'
+    publicIPAllocationMethod: 'Static'
+    roleAssignments: []
+    skuName: 'Standard'
+    skuTier: 'Regional'
+  }
+}
+
+module pip 'br/public:avm/res/network/public-ip-address:0.7.1' = {
+  name: '${time}-publicIpAddressDeployment'
+  params: {
+    // Required parameters
+    name: cenvpipName
+    // Non-required parameters
+
     diagnosticSettings: []
     publicIPAddressVersion: 'IPv4'
     publicIPAllocationMethod: 'Static'
@@ -102,12 +120,13 @@ module fwpip 'br/public:avm/res/network/public-ip-address:0.7.1' = {
 module azfw 'br/public:avm/res/network/azure-firewall:0.5.2' = {
   name: '${time}-azureFirewallDeployment'
   params: {
-    name: 'mcjava-azfw'
+    // Required parameters
+    name: azfwName
     azureSkuTier: 'Standard'
     virtualNetworkResourceId: vnet.outputs.resourceId
     location: location
     threatIntelMode: 'Alert'
-    firewallPolicyId: fwpip.outputs.resourceId
+    firewallPolicyId: firewallPolicy.outputs.resourceId
     publicIPResourceID: fwpip.outputs.resourceId
   }
 }
@@ -116,89 +135,90 @@ module firewallPolicy 'br/public:avm/res/network/firewall-policy:0.2.0' = {
   name: 'firewallPolicyDeployment'
   params: {
     // Required parameters
-    name: 'mcjava-afwp'
+    name: azfwpName
     // Non-required parameters
     allowSqlRedirect: true
     autoLearnPrivateRanges: 'Enabled'
     location: location
-
+    enableTelemetry: true
+    enableProxy: true
     ruleCollectionGroups: [
       {
         priority: 1000
         name: 'outbound'
         ruleCollections: [
-      {
-        ruleCollectionType: 'FirewallPolicyFilterRuleCollection'
-        action: {
-          type: 'Allow'
-        }
-        rules: [
           {
-            ruleType: 'ApplicationRule'
+            ruleCollectionType: 'FirewallPolicyFilterRuleCollection'
+            action: {
+              type: 'Allow'
+            }
+            rules: [
+              {
+                ruleType: 'ApplicationRule'
+                name: 'vnet-outbound'
+                protocols: [
+                  {
+                    protocolType: 'Https'
+                    port: 443
+                  }
+                  {
+                    protocolType: 'Http'
+                    port: 80
+                  }
+                ]
+                fqdnTags: []
+                webCategories: []
+                targetFqdns: [
+                  '*'
+                ]
+                targetUrls: []
+                terminateTLS: false
+                sourceAddresses: [
+                  subnetWebPrefix
+                ]
+                destinationAddresses: []
+                sourceIpGroups: []
+                httpHeadersToInsert: []
+              }
+            ]
             name: 'vnet-outbound'
-            protocols: [
-              {
-                protocolType: 'Https'
-                port: 443
-              }
-              {
-                protocolType: 'Http'
-                port: 80
-              }
-            ]
-            fqdnTags: []
-            webCategories: []
-            targetFqdns: [
-              '*'
-            ]
-            targetUrls: []
-            terminateTLS: false
-            sourceAddresses: [
-              subnetWebPrefix
-            ]
-            destinationAddresses: []
-            sourceIpGroups: []
-            httpHeadersToInsert: []
+            priority: 300
           }
-        ]
-        name: 'vnet-outbound'
-        priority: 300
-      }
-      {
-        ruleCollectionType: 'FirewallPolicyFilterRuleCollection'
-        action: {
-          type: 'Allow'
-        }
-        rules: [
           {
-            ruleType: 'NetworkRule'
-            name: 'nrc-containerapp-out'
-            ipProtocols: [
-              'TCP'
-              'UDP'
+            ruleCollectionType: 'FirewallPolicyFilterRuleCollection'
+            action: {
+              type: 'Allow'
+            }
+            rules: [
+              {
+                ruleType: 'NetworkRule'
+                name: 'nrc-containerapp-out'
+                ipProtocols: [
+                  'TCP'
+                  'UDP'
+                ]
+                sourceAddresses: [
+                  subnetWebPrefix
+                ]
+                sourceIpGroups: []
+                destinationAddresses: [
+                  'MicrosoftContainerRegistry'
+                  'AzureFrontDoorFirstParty'
+                  'AzureContainerRegistry'
+                  'AzureActiveDirectory'
+                  'AzureKeyVault'
+                ]
+                destinationIpGroups: []
+                destinationFqdns: []
+                destinationPorts: [
+                  '80'
+                  '443'
+                ]
+              }
             ]
-            sourceAddresses: [
-              subnetWebPrefix
-            ]
-            sourceIpGroups: []
-            destinationAddresses: [
-              'MicrosoftContainerRegistry'
-              'AzureFrontDoorFirstParty'
-              'AzureContainerRegistry'
-              'AzureActiveDirectory'
-              'AzureKeyVault'
-            ]
-            destinationIpGroups: []
-            destinationFqdns: []
-            destinationPorts: [
-              '80'
-              '443'
-            ]
+            name: 'container-app-outbound'
+            priority: 400
           }
-        ]
-        name: 'container-app-outbound'
-        priority: 400
-      }
         ]
       }
       {
@@ -267,45 +287,25 @@ module firewallPolicy 'br/public:avm/res/network/firewall-policy:0.2.0' = {
       }
     ]
     tier: 'Standard'
-    defaultWorkspaceId: workspace.outputs.resourceId
-    enableProxy: true
   }
 }
 
-// Associate the route table with the storage subnet
-resource storageSubnetRTAssociation 'Microsoft.Network/virtualNetworks/subnets@2023-04-01' = {
-  name: '${vnetName}/${subnetStorageName}'
-  properties: {
-    addressPrefix: subnetStoragePrefix
-    privateLinkServiceNetworkPolicies: 'Enabled'
-    routeTable: {
-      id: routeTable.outputs.resourceId
-    }
-  }
-}
-
-resource appSubnetRTAssociation 'Microsoft.Network/virtualNetworks/subnets@2023-04-01' = {
-  name: '${vnetName}/${subnetWebName}'
-  properties: {
-    addressPrefix: subnetWebPrefix
-    routeTable: {
-      id: routeTable.outputs.resourceId
-    }
-  }
-}
-
-/*
-//\\//\\ Monitoring & Storage Components //\\//\\
-This section creates the Log Analytics workspace and storage account.
-*/
+///////////////////////////
+// Operational Services //
+/////////////////////////
 
 module workspace 'br/public:avm/res/operational-insights/workspace:0.9.1' = {
   name: '${time}-workspaceDeployment'
   params: {
+    // Required parameters
     name: workspaceName
+    // Non-required parameters
     location: location
   }
 }
+///////////////////////
+// Storage Services //
+/////////////////////
 
 module storageAccount 'br/public:avm/res/storage/storage-account:0.15.0' = {
   name: '${time}-storageAccountDeployment'
@@ -396,7 +396,7 @@ module storageAccount 'br/public:avm/res/storage/storage-account:0.15.0' = {
         privateDnsZoneGroup: {
           privateDnsZoneGroupConfigs: [
             {
-              privateDnsZoneResourceId: privateDNSZone.outputs.resourceId
+              privateDnsZoneResourceId: pdnssto.outputs.resourceId
             }
           ]
         }
@@ -410,26 +410,9 @@ module storageAccount 'br/public:avm/res/storage/storage-account:0.15.0' = {
   }
 }
 
-/*
-//\\//\\ Compute Components//\\//\\
-This section creates the managed environment, container app and public IP address.
-*/
-
-module pip 'br/public:avm/res/network/public-ip-address:0.7.1' = {
-  name: '${time}-publicIpAddressDeployment'
-  params: {
-    // Required parameters
-    name: 'mcjava-cenv-pip'
-    // Non-required parameters
-    diagnosticSettings: []
-    publicIPAddressVersion: 'IPv4'
-    publicIPAllocationMethod: 'Static'
-    roleAssignments: []
-    skuName: 'Standard'
-    skuTier: 'Regional'
-
-  }
-}
+///////////////////////
+// Compute Services //
+/////////////////////
 
 module managedEnvironment 'br/public:avm/res/app/managed-environment:0.8.1' = {
   name: '${time}-managedEnvironmentDeployment'
@@ -486,7 +469,7 @@ module minecraft 'br/public:avm/res/app/container-app:0.12.0' = {
           { name: 'EULA', value: 'true' }
           { name: 'MEMORY', value: '3G' }
           { name: 'OPS', value: 'mattffffff' }
-          { name: 'VERSION', value: '1.21.7'}
+          { name: 'VERSION', value: '1.21.7' }
           { name: 'VIEW_DISTANCE', value: '16' }
         ]
       }
@@ -499,13 +482,15 @@ module minecraft 'br/public:avm/res/app/container-app:0.12.0' = {
       }
     ]
     ingressTargetPort: 25565
+    workloadProfileName: 'CAW01'
+    environmentResourceId: managedEnvironment.outputs.resourceId
+    scaleMinReplicas: 1
+    scaleMaxReplicas: 1
     exposedPort: 25565
     ingressTransport: 'tcp'
     trafficWeight: 100
     trafficLatestRevision: true
-    workloadProfileName: 'CAW01'
-    environmentResourceId: managedEnvironment.outputs.resourceId
-    scaleMaxReplicas: 1
-    scaleMinReplicas: 1
   }
 }
+// Output the Minecraft server endpoint
+output minecraftEndpoint string = fwpip.outputs.ipAddress
